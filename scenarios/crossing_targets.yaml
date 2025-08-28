@@ -1,0 +1,26 @@
+# Two targets approach, cross at center, diverge; used to tune association gate
+world:
+  size_m: [20, 20]
+  walls: []  # add occluders here if desired
+targets:
+  - id: 1
+    start: [2, 10]
+    end:   [18, 10]
+    speed_mps: 1.2
+  - id: 2
+    start: [18, 10]
+    end:   [2, 10]
+    speed_mps: 1.2
+sim:
+  duration_sec: 16
+  dt_sec: 0.05
+sensors:
+  rf:
+    snr_db: 18
+    range_sigma_m: 0.6
+    bearing_sigma_deg: 4.0
+params:
+  assoc_gate_m: 1.0          # <-- live-tuned via Unity slider
+  track_decay_sec: 1.5
+  rf_weight: 0.6
+  wall_bonus: 0.4

@@ -1,0 +1,24 @@
+world:
+  size_m: [20, 20]
+  walls: []
+targets:
+  - id: 1
+    start: [3, 3]
+    end:   [17, 17]
+    speed_mps: 0.9
+sim:
+  duration_sec: 20
+  dt_sec: 0.05
+sensors:
+  rf:
+    snr_db: 16
+    range_sigma_m: 0.7
+    bearing_sigma_deg: 5.0
+    spurious_rate_hz: 5.0   # <-- noisy false hits
+params:
+  track_birth_confidence: 0.55   # live-tunable
+  track_delete_confidence: 0.30  # live-tunable
+  assoc_gate_m: 1.0
+  rf_weight: 0.6
+  wall_bonus: 0.4
+  track_decay_sec: 1.5

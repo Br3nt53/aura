@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "experiment_name": "fusion_sweep_v1",
+  "output_dir": "out/experiments/fusion_sweep_v1",
+  "scenario": "scenarios/crossing_targets.yaml",
+  "repetitions": 3,
+  "sweep": {
+    "rf_weight": [
+      0.2,
+      0.4,
+      0.6,
+      0.8,
+      1.0
+    ],
+    "wall_bonus": [
+      0.0,
+      0.2,
+      0.4,
+      0.6
+    ],
+    "track_decay_sec": [
+      0.5,
+      1.0,
+      1.5,
+      2.0
+    ]
+  },
+  "metrics": {
+    "primary": "auc",
+    "secondary": [
+      "id_switches",
+      "track_fragmentations",
+      "mota"
+    ]
+  },
+  "runner": {
+    "cmd": [
+      "python3",
+      "tools/run_single.py",
+      "--scenario",
+      "{scenario}",
+      "--rf_weight",
+      "{rf_weight}",
+      "--wall_bonus",
+      "{wall_bonus}",
+      "--track_decay_sec",
+      "{track_decay_sec}",
+      "--out",
+      "{run_dir}/metrics.json"
+    ],
+    "timeout_sec": 900
+  }
+}

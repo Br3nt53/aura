@@ -1,0 +1,6 @@
+# Map device symlinks (from udev) to ROS 2 launch commands
+# Keys are glob patterns of device paths; values are launch commands with placeholders.
+# Available placeholders: {dev}
+mappings:
+  "/dev/aura_uwb*": "ros2 launch aura_examples uwb_bridge.launch.py dev:={dev}"
+  "/dev/aura_thermal*": "ros2 launch aura_examples thermal_bridge.launch.py dev:={dev}"

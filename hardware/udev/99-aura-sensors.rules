@@ -1,0 +1,7 @@
+# Example udev rules for AURA sensors
+# Copy to: /etc/udev/rules.d/99-aura-sensors.rules
+# Example: assign stable symlink for a UWB dongle (replace idVendor/idProduct)
+# Run `lsusb` to find your IDs.
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", SYMLINK+="aura_uwb0", GROUP="dialout", MODE="0660"
+# Example: thermal camera (replace with your vendor/product)
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="1e4e", ATTRS{idProduct}=="0100", SYMLINK+="aura_thermal0", GROUP="video", MODE="0660"
