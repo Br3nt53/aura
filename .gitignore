@@ -13,7 +13,6 @@ __pycache__/
 *.egg-info/
 .eggs/
 .pytest_cache/
-.venv/
 .venv*/
 pip-wheel-metadata/
 *.log
@@ -24,11 +23,11 @@ htmlcov/
 .tox/
 .mypy_cache/
 
-# ROS 2 build & install artifacts
+# ROS 2 build & install artifacts (ignore all)
 ros2_ws/build/
 ros2_ws/install/
 ros2_ws/log/
-ros2_ws/src/   # remove if you want to keep version-controlled packages here
+ros2_ws/src/   # comment/remove this line if you want to keep sources here
 
 # Colcon metadata
 .colcon/
@@ -38,8 +37,7 @@ log/
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
-[Bb]uild/
-[Bb]uilds/
+[Bb]uild*/
 [Ll]ogs/
 [Mm]emoryCaptures/
 UserSettings/
@@ -51,7 +49,7 @@ UserSettings/
 *.booproj
 *.svd
 
-# Ignore generated Unity/Assets caches
+# Unity generated caches
 unity/Library/
 unity/Temp/
 unity/Logs/
