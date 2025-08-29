@@ -1,0 +1,6 @@
+{
+  "name": "AURA",
+  "build": { "dockerfile": "Dockerfile", "context": "." },
+  "features": { "ghcr.io/devcontainers/features/common-utils:2": {} },
+  "postCreateCommand": "python3 -m pip install -U pip && if [ -f requirements.txt ]; pip install -r requirements.txt; fi"
+}
