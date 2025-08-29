@@ -1,4 +1,10 @@
-assoc_gate_m: 1.5
-stability_alpha: 0.2
-birth_stability_min: 0.35
-delete_stability_min: 0.15
+# Golden parameters derived from Bayesian optimization with a real MOTA evaluation pipeline.
+# Scenario: scenarios/crossing_targets.yaml
+# Best MOTA: 0.8675
+
+fusion_tracker:
+  ros__parameters:
+    rf_weight: 0.726
+    track_decay_sec: 2.152
+    track_stability_alpha: 0.815
+

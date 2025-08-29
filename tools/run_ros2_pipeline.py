@@ -1,46 +1,67 @@
 #!/usr/bin/env python3
-import argparse, subprocess, time, json, os, signal, sys, yaml
-from pathlib import Path
+import argparse
+import subprocess
+import yaml
+import tempfile
+import os
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", required=True)
-    ap.add_argument("--workdir", required=True)
-    ap.add_argument("--ros_pkg", default="aura_examples")
-    ap.add_argument("--launch", default="bringup.launch.py")
-    ap.add_argument("--buffer_sec", type=float, default=1.0, help="Extra time after scenario ends")
-    args = ap.parse_args()
+def run_ros2_pipeline(scenario_path, params_path, out_pred_path, test_case=None):
+    """Runs the full ROS 2 pipeline for a given scenario."""
+    
+    with open(scenario_path, 'r') as f:
+        scenario_data = yaml.safe_load(f)
 
-    # Read duration from scenario to know how long to run
-    data = yaml.safe_load(open(args.scenario, "r"))
-    duration = float(data.get("sim", {}).get("duration_sec", 10.0))
+    scenario_to_run = scenario_data
+    if test_case:
+        if 'test_cases' in scenario_data and test_case in scenario_data['test_cases']:
+            scenario_to_run = scenario_data['test_cases'][test_case]
+        else:
+            raise ValueError(f"Test case '{test_case}' not found in {scenario_path}")
 
-    cmd = [
-        "ros2", "launch", args.ros_pkg, args.launch,
-        f"scenario:={args.scenario}",
-        f"workdir:={args.workdir}"
-    ]
-    print("[pipeline] starting:", " ".join(cmd))
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as tmp_scenario:
+        yaml.dump(scenario_to_run, tmp_scenario)
+        tmp_scenario_path = tmp_scenario.name
 
-    t_end = time.time() + duration + args.buffer_sec
     try:
-        while time.time() < t_end:
-            line = proc.stdout.readline()
-            if not line:
-                time.sleep(0.1)
-                continue
-            sys.stdout.write(line)
-            sys.stdout.flush()
-    finally:
-        # Try to terminate cleanly
-        proc.send_signal(signal.SIGINT)
-        try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        # **THE ACTUAL FIX**
+        # We must explicitly source the ROS 2 environments in the same shell
+        # that executes the launch command. This is the most robust method.
+        ros_command = (
+            f"source /opt/ros/humble/setup.bash && "
+            f"source /aura_ws/ros2_ws/install/setup.bash && "
+            f"ros2 launch aura_examples bringup.launch.py "
+            f"scenario:={tmp_scenario_path} "
+            f"params_file:={params_path} "
+            f"pred_path:={out_pred_path} "
+            "headless:=true"
+        )
+        
+        # The command is wrapped in a bash shell to handle the 'source' commands.
+        cmd = ['/bin/bash', '-c', ros_command]
+        
+        print(f"Executing ROS 2 command: {ros_command}")
+        
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        for line in iter(process.stdout.readline, ''):
+            print(line, end='')
+        
+        process.wait()
+        
+        if process.returncode != 0:
+            print("--- STDERR ---")
+            print(process.stderr.read())
+            raise subprocess.CalledProcessError(process.returncode, cmd)
 
-    print("[pipeline] finished. Predictions should be in", os.path.join(args.workdir, "pred.jsonl"))
+    finally:
+        os.remove(tmp_scenario_path)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run the AURA ROS 2 pipeline.")
+    parser.add_argument('--scenario', required=True, help="Path to the scenario YAML file.")
+    parser.add_argument('--params', required=True, help="Path to the parameters YAML file.")
+    parser.add_argument('--out-pred', required=True, help="Path to save the prediction output JSONL file.")
+    parser.add_argument('--test-case', required=False, help="Specify a single test case to run from a scenario file.")
+    args = parser.parse_args()
+
+    run_ros2_pipeline(args.scenario, args.params, args.out_pred, args.test_case)

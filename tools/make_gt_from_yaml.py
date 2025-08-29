@@ -1,79 +1,73 @@
 #!/usr/bin/env python3
-"""
-Generate ground-truth JSONL from a scenario YAML.
-
-Input YAML (examples in scenarios/*.yaml):
-targets:
-  - id: 1
-    start: [x0, y0]
-    end:   [x1, y1]
-    speed_mps: 1.2  # optional; if omitted we linearly traverse over sim.duration_sec
-
-sim:
-  duration_sec: 16
-  dt_sec: 0.05
-
-Output JSONL (gt.jsonl):
-{"frame": 0, "objects": [{"id": 1, "x": 2.0, "y": 10.0}, ...]}
-{"frame": 1, "objects": [{"id": 1, "x": 2.06, "y": 10.0}, ...]}
-...
-"""
-import argparse, json, math, sys
-from pathlib import Path
+import argparse
 import yaml
+import json
 
-def linspace_xy(p0, p1, tfrac):
-    x = p0[0] + (p1[0]-p0[0])*tfrac
-    y = p0[1] + (p1[1]-p0[1])*tfrac
-    return x, y
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", required=True, help="Path to scenario YAML")
-    ap.add_argument("--out", required=True, help="Output gt.jsonl path")
-    args = ap.parse_args()
-
-    data = yaml.safe_load(open(args.scenario, "r"))
-    sim = data.get("sim", {})
-    duration = float(sim.get("duration_sec", 10.0))
-    dt = float(sim.get("dt_sec", 0.1))
-    nframes = max(1, int(round(duration / dt)))
-
-    targets = data.get("targets", [])
-    # Precompute per-target total distance
-    dists = []
-    for t in targets:
-        sx, sy = t["start"]
-        ex, ey = t["end"]
-        d = math.hypot(ex - sx, ey - sy)
-        dists.append(d)
-
-    # Build frames
-    outp = Path(args.out)
-    outp.parent.mkdir(parents=True, exist_ok=True)
-
-    with outp.open("w") as f:
-        for fi in range(nframes):
-            tsec = fi * dt
-            objs = []
-            for t, dist in zip(targets, dists):
-                tid = int(t["id"])
-                sx, sy = t["start"]
-                ex, ey = t["end"]
-                speed = float(t.get("speed_mps", 0.0))
-
-                # Compute fraction along path
-                if speed > 0.0 and dist > 1e-6:
-                    total_time = dist / speed
-                    frac = min(1.0, tsec / max(1e-9, total_time))
-                else:
-                    # No speed specified: distribute evenly over total duration
-                    frac = min(1.0, tsec / max(1e-9, duration))
-
-                x, y = linspace_xy((sx,sy), (ex,ey), frac)
-                objs.append({"id": tid, "x": x, "y": y})
-            line = {"frame": fi, "objects": objs}
-            f.write(json.dumps(line) + "\n")
+def generate_gt(scenario_data):
+    """Generates ground truth data from a single scenario dictionary."""
+    gt_data = []
+    sim_time_s = scenario_data.get('sim_time_s', 10)
+    rate_hz = 10  # Standard rate for ground truth generation
+    
+    for t_step in range(int(sim_time_s * rate_hz)):
+        time_s = t_step / rate_hz
+        frame = t_step
+        
+        for target in scenario_data.get('targets', []):
+            start_time = target.get('start_time_s', 0)
+            end_time = target.get('end_time_s', sim_time_s)
+            
+            if start_time <= time_s <= end_time:
+                path = target['path']
+                
+                # Linear interpolation between path points
+                duration = end_time - start_time
+                progress = (time_s - start_time) / duration if duration > 0 else 0
+                
+                # Find which two points to interpolate between
+                segment_progress = progress * (len(path) - 1)
+                p1_idx = int(segment_progress)
+                p2_idx = min(p1_idx + 1, len(path) - 1)
+                
+                local_progress = segment_progress - p1_idx
+                
+                p1 = path[p1_idx]
+                p2 = path[p2_idx]
+                
+                x = p1[0] + (p2[0] - p1[0]) * local_progress
+                y = p1[1] + (p2[1] - p1[1]) * local_progress
+                
+                gt_data.append({
+                    'frame': frame,
+                    'id': target['id'],
+                    'x': x,
+                    'y': y
+                })
+                
+    return gt_data
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Generate ground truth JSONL from a scenario YAML.")
+    parser.add_argument('--scenario', required=True, help="Path to the scenario YAML file.")
+    parser.add_argument('--out', required=True, help="Path to the output JSONL file.")
+    # Add the new, optional argument
+    parser.add_argument('--test-case', required=False, help="Specify a single test case to run from a scenario file.")
+    args = parser.parse_args()
+
+    with open(args.scenario, 'r') as f:
+        data = yaml.safe_load(f)
+
+    scenario_to_run = data
+    if args.test_case:
+        if 'test_cases' in data and args.test_case in data['test_cases']:
+            scenario_to_run = data['test_cases'][args.test_case]
+        else:
+            raise ValueError(f"Test case '{args.test_case}' not found in {args.scenario}")
+
+    gt_data = generate_gt(scenario_to_run)
+
+    with open(args.out, 'w') as f:
+        for entry in gt_data:
+            f.write(json.dumps(entry) + '\n')
+
+    print(f"Successfully generated ground truth for '{args.test_case or 'main scenario'}' to {args.out}")
