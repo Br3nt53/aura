@@ -15,3 +15,9 @@ Builds/
 Logs/
 UserSettings/
 *.unitypackage
+
+# ROS 2 build/install/logs
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
