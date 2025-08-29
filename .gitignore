@@ -1,24 +1,69 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.pytest_cache/
 .venv/
+.venv*/
+pip-wheel-metadata/
+*.log
 
-# Output
-out/
+# Coverage / test
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
 
-# Unity defaults
-Library/
-Temp/
-Obj/
-Build/
-Builds/
-Logs/
-UserSettings/
-*.unitypackage
-
-
-# ROS 2 build/install/logs
+# ROS 2 build & install artifacts
 ros2_ws/build/
 ros2_ws/install/
 ros2_ws/log/
-ros2_ws/src/
+ros2_ws/src/   # remove if you want to keep version-controlled packages here
+
+# Colcon metadata
+.colcon/
+log/
+
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+
+# Ignore generated Unity/Assets caches
+unity/Library/
+unity/Temp/
+unity/Logs/
+unity/Obj/
+
+# VSCode / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Other junk
+*.bak
+*.tmp
+*.orig
