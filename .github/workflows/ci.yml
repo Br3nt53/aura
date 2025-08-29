@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install deps
         run: |
@@ -35,3 +36,4 @@ jobs:
           test -f out/tmp/metrics.json && python - <<'PY'
 import json; m=json.load(open("out/tmp/metrics.json")); print("AUC:", m.get("auc"))
 PY
+
