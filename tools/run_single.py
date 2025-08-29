@@ -6,6 +6,32 @@ import subprocess
 import pandas as pd
 import motmetrics as mm
 
+# --- BEGIN AURA EVALUATOR FEATURE FLAG ---
+_USE_AURA = os.environ.get("USE_AURA_EVALUATOR", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
+try:
+    if _USE_AURA:
+        from evaluation.mot_evaluator import MOTEvaluator, EvalParams  # type: ignore
+except Exception as _e:
+    print(
+        f"[INFO] USE_AURA_EVALUATOR set but evaluator not available ({_e}); falling back to motmetrics."
+    )
+    _USE_AURA = False
+
+
+def _evaluate_with_aura(pred_path: str, gt_path: str) -> dict:
+    params = EvalParams()
+    ev = MOTEvaluator(params)
+    res = ev.evaluate(pred_path, gt_path)
+    res["objective"] = res.get("mota", 0.0)
+    return res
+
+
+# --- END AURA EVALUATOR FEATURE FLAG ---
+
 
 def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
     """
@@ -60,6 +86,22 @@ def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
     print(f"Running ROS 2 pipeline with command: {' '.join(ros_pipeline_cmd)}")
     subprocess.run(ros_pipeline_cmd, check=True)
     print(f"Predictions saved to {pred_path}")
+    # --- BEGIN AURA EVALUATOR FAST-PATH ---
+    if _USE_AURA:
+        print("[INFO] Using AURA evaluator via USE_AURA_EVALUATOR")
+        try:
+            metrics_dict = _evaluate_with_aura(pred_path, gt_path)
+        except Exception as e:
+            print(f"[WARN] AURA evaluator failed ({e}); falling back to motmetrics.")
+        else:
+            with open(metrics_path, "w") as f:
+                json.dump(metrics_dict, f, indent=4)
+            print(
+                f"Evaluation complete. MOTA: {metrics_dict.get('objective', 0.0):.4f}"
+            )
+            print(f"Metrics saved to {metrics_path}")
+            return metrics_path
+    # --- END AURA EVALUATOR FAST-PATH ---
 
     # --- Step 3: Evaluate Predictions ---
     print("Evaluating predictions against ground truth...")
