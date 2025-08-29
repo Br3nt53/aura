@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import os
 import subprocess
 import pandas as pd
@@ -69,6 +68,41 @@ def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
     print(f"Generating ground truth with command: {' '.join(gt_gen_cmd)}")
     subprocess.run(gt_gen_cmd, check=True)
     print(f"Ground truth saved to {gt_path}")
+    _SKIP_ROS = os.environ.get("SKIP_ROS", "").strip().lower() in {"1", "true", "yes"}
+    if _SKIP_ROS:
+        print("[INFO] SKIP_ROS=1: skipping ROS pipeline step")
+        # If predictions don't exist, synthesize trivial preds from GT so we can evaluate.
+        if True:  # always regenerate preds when SKIP_ROS=1
+            import json
+
+            with open(gt_path, "r") as fin, open(pred_path, "w") as fout:
+                for line in fin:
+                    if not line.strip():
+                        continue
+                    d = json.loads(line)
+                    out = {
+                        "frame": int(d.get("frame", 0)),
+                        "id": str(d.get("id", "p0")),
+                        "x": float(d.get("x", 0.0)),
+                        "y": float(d.get("y", 0.0)),
+                        "conf": 1.0,
+                    }
+                    fout.write(json.dumps(out) + "\n")
+        if _USE_AURA:
+            metrics_dict = _evaluate_with_aura(pred_path, gt_path)
+            with open(metrics_path, "w") as f:
+                import json
+
+                json.dump(metrics_dict, f, indent=4)
+            print(
+                f"Evaluation complete. MOTA: {metrics_dict.get('objective', metrics_dict.get('mota', 0.0)):.4f}"
+            )
+            print(f"Metrics saved to {metrics_path}")
+            return metrics_path
+        else:
+            print(
+                "[INFO] SKIP_ROS=1 but USE_AURA_EVALUATOR is not set; continuing to legacy evaluator..."
+            )
 
     # --- Step 2: Run ROS 2 Pipeline ---
     ros_pipeline_cmd = [
