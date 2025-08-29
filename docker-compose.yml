@@ -1,0 +1,11 @@
+services:
+  aura:
+    build: .
+    image: aura:latest
+    container_name: aura
+    # Use 'sleep infinity' for a more robust way to keep the container alive
+    # for exec commands, instead of 'tail -f /dev/null'.
+    command: sleep infinity
+    volumes:
+      - .:/aura_ws
+

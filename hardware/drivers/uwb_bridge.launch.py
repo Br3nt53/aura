@@ -1,12 +1,13 @@
+#!/usr/bin/env python3
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+
 
 def generate_launch_description():
-    dev = LaunchConfiguration('dev')
-    return LaunchDescription([
-        DeclareLaunchArgument('dev', default_value='/dev/aura_uwb0'),
-        # Replace with your real UWB bridge node
-        Node(package='aura_examples', executable='mock_rf_node', name='uwb_bridge', output='log')
-    ])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument("dev", default_value="/dev/aura_uwb0"),
+            # Add nodes/actions that use LaunchConfiguration("dev") here, e.g.:
+            # Node(package="...", executable="...", parameters=[{"device": LaunchConfiguration("dev")}]),
+        ]
+    )

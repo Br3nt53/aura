@@ -11,9 +11,13 @@ frame,x,y,score,id
 Output JSONL:
 {"frame": 0, "detections": [{"id": 0, "x": 2.0, "y": 10.0, "score": 0.9}]}
 """
-import argparse, csv, json
+
+import argparse
+import csv
+import json
 from collections import defaultdict
 from pathlib import Path
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -28,7 +32,11 @@ def main():
             frame = int(row["frame"])
             x = float(row["x"])
             y = float(row["y"])
-            score = float(row.get("score", 1.0)) if row.get("score") not in (None, "") else 1.0
+            score = (
+                float(row.get("score", 1.0))
+                if row.get("score") not in (None, "")
+                else 1.0
+            )
             pid = int(row.get("id", 0)) if row.get("id") not in (None, "") else 0
             by_frame[frame].append({"id": pid, "x": x, "y": y, "score": score})
 
@@ -37,6 +45,7 @@ def main():
     with outp.open("w") as f:
         for frame in sorted(by_frame.keys()):
             f.write(json.dumps({"frame": frame, "detections": by_frame[frame]}) + "\n")
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,65 @@
+# AURA Stress Test Suite
+# This file contains multiple challenging scenarios to validate the fusion tracker.
+
+test_cases:
+  # Test 1: High Clutter
+  # Floods the tracker with many short-lived, random false positives.
+  # Expected outcome: Tracker should maintain tracks on real targets and reject most clutter.
+  high_clutter:
+    sim_time_s: 20
+    targets:
+      - id: 0
+        path: [[-5, 0], [5, 0]]
+        start_time_s: 0
+        end_time_s: 20
+    rf_clutter:
+      count: 50
+      rate_hz: 5.0
+      x_range: [-10, 10]
+      y_range: [-10, 10]
+
+  # Test 2: High Density Crossing
+  # Multiple targets in a confined space with intersecting paths.
+  # Expected outcome: Tracker should maintain correct IDs with minimal swaps.
+  high_density_crossing:
+    sim_time_s: 15
+    targets:
+      - { id: 0, path: [[-4, -4], [4, 4]], start_time_s: 0, end_time_s: 15 }
+      - { id: 1, path: [[-4, 4], [4, -4]], start_time_s: 0, end_time_s: 15 }
+      - { id: 2, path: [[4, -4], [-4, 4]], start_time_s: 0, end_time_s: 15 }
+      - { id: 3, path: [[4, 4], [-4, -4]], start_time_s: 0, end_time_s: 15 }
+
+  # Test 3: Pop-Up Targets
+  # Targets that appear and disappear abruptly during the simulation.
+  # Expected outcome: Tracker should initiate and terminate tracks promptly.
+  popup_targets:
+    sim_time_s: 30
+    targets:
+      - { id: 0, path: [[-5, 2], [5, 2]], start_time_s: 0, end_time_s: 30 }
+      - { id: 1, path: [[-5, -2], [5, -2]], start_time_s: 5, end_time_s: 15 } # Pops up
+      - { id: 2, path: [[5, 0], [-5, 0]], start_time_s: 10, end_time_s: 25 } # Pops up later
+
+  # Test 4: Low Detection Probability
+  # Sensor has only a 50% chance of detecting a target in each frame.
+  # Expected outcome: Tracker should maintain tracks despite intermittent data (coasting).
+  low_detection_prob:
+    sim_time_s: 20
+    targets:
+      - { id: 0, path: [[-5, 0], [5, 0]], start_time_s: 0, end_time_s: 20 }
+    nodes:
+      mock_rf_node:
+        ros__parameters:
+          detection_probability: 0.5
+
+  # Test 5: High Positional Noise
+  # Sensor readings are noisy, with a standard deviation of 0.5 meters.
+  # Expected outcome: Tracker should produce a smoothed, stable track that is more accurate than the raw sensor data.
+  high_positional_noise:
+    sim_time_s: 20
+    targets:
+      - { id: 0, path: [[-5, 0], [5, 0]], start_time_s: 0, end_time_s: 20 }
+    nodes:
+      mock_rf_node:
+        ros__parameters:
+          positional_noise_stddev: 0.5
+

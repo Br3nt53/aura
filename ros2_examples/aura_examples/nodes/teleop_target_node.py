@@ -15,7 +15,7 @@ from pynput import keyboard
 
 
 class TeleopTargetNode(Node):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("teleop_target_node")
         self.pub = self.create_publisher(Pose, "/mock_target/pose", 10)
 
@@ -33,7 +33,7 @@ class TeleopTargetNode(Node):
 
         self.get_logger().info("Teleop Target Started. Use WASD keys to move.")
 
-    def on_press(self, key):
+    def on_press(self, key) -> None:
         """Handle WASD keypresses to move the mock target."""
         try:
             if key.char == "w":
@@ -48,7 +48,7 @@ class TeleopTargetNode(Node):
             # Non-character keys (shift, ctrl, etc.)
             pass
 
-    def tick(self):
+    def tick(self) -> None:
         """Publish the current position as a Pose message."""
         msg = Pose()
         msg.position.x = float(self.pos[0])
@@ -58,12 +58,14 @@ class TeleopTargetNode(Node):
         self.pub.publish(msg)
 
 
-def main():
+def main() -> None:
     rclpy.init()
     node = TeleopTargetNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
