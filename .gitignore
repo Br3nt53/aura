@@ -1,9 +1,14 @@
-# macOS
+# -----------------------------
+# OS junk
+# -----------------------------
 .DS_Store
 .AppleDouble
 .LSOverride
+._*                    # macOS resource forks
 
+# -----------------------------
 # Python
+# -----------------------------
 __pycache__/
 *.py[cod]
 *.pyo
@@ -13,49 +18,34 @@ __pycache__/
 *.egg-info/
 .eggs/
 .pytest_cache/
+.ruff_cache/
 .venv/
 .venv*/
 pip-wheel-metadata/
 *.log
 
-# Coverage / type / tox
+# Type checkers / test coverage / tox
 .coverage
 htmlcov/
 .tox/
 .mypy_cache/
 
-# ROS 2 colcon artifacts
+# -----------------------------
+# ROS 2 / Colcon (keep src clean)
+# -----------------------------
 ros2_ws/build/
 ros2_ws/install/
 ros2_ws/log/
-# If you keep canonical packages in ros2_examples/ and symlink into ros2_ws/src,
-# DO NOT ignore ros2_ws/src/ globally. Only ignore generated stuff.
-
-# Colcon metadata
 .colcon/
 log/
 
-# Output / scratch
-out/
-tmp/
-*.tmp
-*.bak
-*.orig
+# If you decide to place versioned packages directly in ros2_ws/src,
+# delete the next line; for now we keep code in ros2_examples and symlink.
+ros2_ws/src/
 
-# Data & large assets (use git-lfs if you must track)
-data/
-data/**
-
-# Patches & bundles
-*.patch
-patches/
-*_patches_bundle.zip
-*_patches_bundle/
-.aura_evaluator_patches_bundle.zip
-._patches/
-._aura_evaluator_patches_bundle
-
+# -----------------------------
 # Unity
+# -----------------------------
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
@@ -71,13 +61,34 @@ UserSettings/
 *.pidb
 *.booproj
 *.svd
+
+# Local Unity caches (if nested under 'unity/')
 unity/Library/
 unity/Temp/
 unity/Logs/
 unity/Obj/
 
+# -----------------------------
 # Editors / IDE
+# -----------------------------
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# -----------------------------
+# Local dev artifacts & data
+# -----------------------------
+out/
+patches/
+*.patch
+*_patches_bundle.zip
+hoot-*.sh
+data/
+
+# -----------------------------
+# Miscellaneous temp
+# -----------------------------
+*.bak
+*.tmp
+*.orig
