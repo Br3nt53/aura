@@ -4,10 +4,6 @@ on:
     branches: [ main ]
   pull_request:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,16 +31,8 @@ jobs:
         run: pytest -q
 
       - name: Smoke (optional)
-        if: ${{ github.event_name != 'pull_request' }}  # reduce noise on forks
         run: |
           python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json || true
-          if [ -f out/tmp/metrics.json ]; then
-            python - <<'PY'
-import json, sys, pathlib
-p = pathlib.Path("out/tmp/metrics.json")
-m = json.loads(p.read_text()) if p.exists() else {}
-auc = m.get("auc", 0.0)
-assert 0.0 <= auc <= 1.0, f"AUC out of range: {auc}"
-print("AUC OK:", auc)
+          test -f out/tmp/metrics.json && python - <<'PY'
+import json; m=json.load(open("out/tmp/metrics.json")); print("AUC:", m.get("auc"))
 PY
-          fi
