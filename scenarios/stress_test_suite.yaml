@@ -63,3 +63,4 @@ test_cases:
         ros__parameters:
           positional_noise_stddev: 0.5
 
+scenarios/stress_test_suite.yaml
