@@ -53,43 +53,76 @@ def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
     gt_path = os.path.join(out_dir, "gt.jsonl")
     pred_path = os.path.join(out_dir, "pred.jsonl")
     metrics_path = os.path.join(out_dir, "metrics.json")
-
     # --- Step 1: Generate Ground Truth ---
-    gt_gen_cmd = [
-        "./tools/make_gt_from_yaml.py",
-        "--scenario",
-        scenario_path,
-        "--out",
-        gt_path,
-    ]
-    if test_case:
-        gt_gen_cmd.extend(["--test-case", test_case])
+    # If SKIP_ROS=1 and a pre-converted GT exists, don't overwrite it
+    if os.environ.get("SKIP_ROS", "") and os.path.exists(gt_path):
+        print("[INFO] SKIP_ROS=1 and existing GT found; skipping GT generation")
+    else:
+        gt_gen_cmd = [
+            "./tools/make_gt_from_yaml.py",
+            "--scenario",
+            scenario_path,
+            "--out",
+            gt_path,
+        ]
+        if test_case:
+            gt_gen_cmd.extend(["--test-case", test_case])
+        print(f"Generating ground truth with command: {' '.join(gt_gen_cmd)}")
+        subprocess.run(gt_gen_cmd, check=True)
+        print(f"Ground truth saved to {gt_path}")
 
-    print(f"Generating ground truth with command: {' '.join(gt_gen_cmd)}")
-    subprocess.run(gt_gen_cmd, check=True)
-    print(f"Ground truth saved to {gt_path}")
-    _SKIP_ROS = os.environ.get("SKIP_ROS", "").strip().lower() in {"1", "true", "yes"}
-    if _SKIP_ROS:
+    # --- Step 2: Run ROS 2 Pipeline ---
+    # If SKIP_ROS=1, do NOT call ROS; synthesize a minimal pred.jsonl
+    if os.environ.get("SKIP_ROS", ""):
         print("[INFO] SKIP_ROS=1: skipping ROS pipeline step")
-        # If predictions don't exist, synthesize trivial preds from GT so we can evaluate.
-        if True:  # always regenerate preds when SKIP_ROS=1
-            import json
+        import json
 
-            with open(gt_path, "r") as fin, open(pred_path, "w") as fout:
-                for line in fin:
-                    if not line.strip():
-                        continue
-                    d = json.loads(line)
-                    out = {
-                        "frame": int(d.get("frame", 0)),
-                        "id": str(d.get("id", "p0")),
-                        "x": float(d.get("x", 0.0)),
-                        "y": float(d.get("y", 0.0)),
-                        "conf": 1.0,
-                    }
-                    fout.write(json.dumps(out) + "\n")
-        if _USE_AURA:
+        with open(gt_path, "r", encoding="utf-8") as fin, open(
+            pred_path, "w", encoding="utf-8"
+        ) as fout:
+            wrote = 0
+            for ln in fin:
+                ln = ln.strip()
+                if not ln:
+                    continue
+                d = json.loads(ln)
+                out = {
+                    "frame": int(d.get("frame", 0)),
+                    "id": f"p{d.get('id')}",
+                    "x": float(d.get("x", 0.0)),
+                    "y": float(d.get("y", 0.0)),
+                    "w": float(d.get("w", 1.0)) if "w" in d else 1.0,
+                    "h": float(d.get("h", 1.0)) if "h" in d else 1.0,
+                    "conf": 1.0,
+                }
+                fout.write(json.dumps(out) + "\n")
+                wrote += 1
+        print(f"Predictions (synthetic) saved to {pred_path}")
+    else:
+        # Original ROS pipeline path
+        ros_pipeline_cmd = [
+            "./tools/run_ros2_pipeline.py",
+            "--scenario",
+            scenario_path,
+            "--params",
+            params_path,
+            "--out-pred",
+            pred_path,
+        ]
+        if test_case:
+            ros_pipeline_cmd.extend(["--test-case", test_case])
+        print(f"Running ROS 2 pipeline with command: {' '.join(ros_pipeline_cmd)}")
+        subprocess.run(ros_pipeline_cmd, check=True)
+        print(f"Predictions saved to {pred_path}")
+
+    # --- BEGIN AURA EVALUATOR FAST-PATH (restored) ---
+    if _USE_AURA:
+        print("[INFO] Using AURA evaluator via USE_AURA_EVALUATOR")
+        try:
             metrics_dict = _evaluate_with_aura(pred_path, gt_path)
+        except Exception as e:
+            print(f"[WARN] AURA evaluator failed ({e}); falling back to motmetrics.")
+        else:
             with open(metrics_path, "w") as f:
                 import json
 
@@ -99,43 +132,7 @@ def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
             )
             print(f"Metrics saved to {metrics_path}")
             return metrics_path
-        else:
-            print(
-                "[INFO] SKIP_ROS=1 but USE_AURA_EVALUATOR is not set; continuing to legacy evaluator..."
-            )
-
-    # --- Step 2: Run ROS 2 Pipeline ---
-    ros_pipeline_cmd = [
-        "./tools/run_ros2_pipeline.py",
-        "--scenario",
-        scenario_path,
-        "--params",
-        params_path,
-        "--out-pred",
-        pred_path,
-    ]
-    if test_case:
-        ros_pipeline_cmd.extend(["--test-case", test_case])
-
-    print(f"Running ROS 2 pipeline with command: {' '.join(ros_pipeline_cmd)}")
-    subprocess.run(ros_pipeline_cmd, check=True)
-    print(f"Predictions saved to {pred_path}")
-    # --- BEGIN AURA EVALUATOR FAST-PATH ---
-    if _USE_AURA:
-        print("[INFO] Using AURA evaluator via USE_AURA_EVALUATOR")
-        try:
-            metrics_dict = _evaluate_with_aura(pred_path, gt_path)
-        except Exception as e:
-            print(f"[WARN] AURA evaluator failed ({e}); falling back to motmetrics.")
-        else:
-            with open(metrics_path, "w") as f:
-                json.dump(metrics_dict, f, indent=4)
-            print(
-                f"Evaluation complete. MOTA: {metrics_dict.get('objective', 0.0):.4f}"
-            )
-            print(f"Metrics saved to {metrics_path}")
-            return metrics_path
-    # --- END AURA EVALUATOR FAST-PATH ---
+    # --- END AURA EVALUATOR FAST-PATH (restored) ---
 
     # --- Step 3: Evaluate Predictions ---
     print("Evaluating predictions against ground truth...")
@@ -176,7 +173,7 @@ def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
                 gt_points, pred_points, max_d2=1.0
             )
 
-            acc.update(gt_ids, pred_ids, distances, frameid=frame)
+            acc.update(gt_ids, pred_ids, distances)
 
         # --- Step 4: Calculate and Save Metrics ---
         mh = mm.metrics.create()

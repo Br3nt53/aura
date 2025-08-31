@@ -1,0 +1,41 @@
+--- /dev/null
++++ b/tests/unit/test_yaml_fps_extraction.py
+@@ -0,0 +1,47 @@
++import os, textwrap
++from tools import run_single_adapter
++
++def test_fps_from_yaml_sensor(tmp_path, monkeypatch):
++    yaml_path = tmp_path / "scenario.yaml"
++    yaml_path.write_text(textwrap.dedent("""
++    sensor:
++      fps: 25
++    """))
++    fps = run_single_adapter._derive_fps_from_env_and_yaml(str(yaml_path))
++    assert fps == 25.0
++
++def test_fps_from_yaml_camera(tmp_path):
++    yaml_path = tmp_path / "scenario.yaml"
++    yaml_path.write_text(textwrap.dedent("""
++    camera:
++      fps: 15
++    """))
++    fps = run_single_adapter._derive_fps_from_env_and_yaml(str(yaml_path))
++    assert fps == 15.0
++
++def test_fps_from_yaml_top_level(tmp_path):
++    yaml_path = tmp_path / "scenario.yaml"
++    yaml_path.write_text("fps: 60\n")
++    fps = run_single_adapter._derive_fps_from_env_and_yaml(str(yaml_path))
++    assert fps == 60.0
++
++def test_fps_from_env_fallback(monkeypatch, tmp_path):
++    yaml_path = tmp_path / "scenario.yaml"
++    yaml_path.write_text("not_fps: 123\n")
++    monkeypatch.setenv("AURA_FPS", "20")
++    fps = run_single_adapter._derive_fps_from_env_and_yaml(str(yaml_path))
++    assert fps == 20.0
++
++def test_fps_default_if_no_yaml(monkeypatch):
++    monkeypatch.delenv("AURA_FPS", raising=False)
++    fps = run_single_adapter._derive_fps_from_env_and_yaml("/nonexistent/file.yaml")
++    assert fps == 10.0  # default

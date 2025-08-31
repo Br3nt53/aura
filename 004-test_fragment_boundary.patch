@@ -1,0 +1,24 @@
+--- /dev/null
++++ b/tests/unit/test_fragment_boundary.py
+@@ -0,0 +1,40 @@
++import json
++from evaluation.mot_evaluator import MOTEvaluator, EvalParams
++
++def _w(path, rows):
++    path.write_text("\n".join(json.dumps(r) for r in rows))
++
++def test_fragment_boundary_strict_vs_inclusive(tmp_path):
++    # fps=10, decay_sec=1.0 -> decay_frames=10
++    # GT present 0..10 (last seen at 10), then at 20 (gap=10), then at 21 (gap=11)
++    gt = [{"frame":i,"id":1,"x":0,"y":0} for i in range(0,11)]
++    gt.append({"frame":20,"id":1,"x":0,"y":0})  # boundary gap = 10
++    gt.append({"frame":21,"id":1,"x":0,"y":0})  # over boundary = 11
++    pr = [{"frame":r["frame"],"id":"a","x":0,"y":0,"conf":1.0} for r in gt]
++    gp, pp = tmp_path/"gt.jsonl", tmp_path/"pred.jsonl"
++    _w(gp, gt); _w(pp, pr)
++
++    strict = MOTEvaluator(EvalParams(track_decay_sec=1.0, fps=10.0, fragment_gap_mode="strict")).evaluate(str(pp), str(gp))
++    assert strict["fragments"] == 1  # only the 11-gap counts
++
++    incl = MOTEvaluator(EvalParams(track_decay_sec=1.0, fps=10.0, fragment_gap_mode="inclusive")).evaluate(str(pp), str(gp))
++    assert incl["fragments"] == 2   # both 10-gap and 11-gap count

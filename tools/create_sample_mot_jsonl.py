@@ -1,73 +1,50 @@
 #!/usr/bin/env python3
-"""
-Convert MOTChallenge txt files to JSONL schema.
-- GT: data_root/gt/gt.txt
-- Pred: data_root/det/det.txt (if missing, synthesize from GT)
-"""
-
-import argparse
-import json
 import pathlib
-
-
-def read_mot_txt(p: pathlib.Path):
-    rows = []
-    for line in p.read_text().splitlines():
-        if not line.strip():
-            continue
-        parts = line.split(",")
-        frame = int(float(parts[0]))
-        tid = int(float(parts[1]))
-        x = float(parts[2])
-        y = float(parts[3])
-        w = float(parts[4])
-        h = float(parts[5])
-        rows.append({"frame": frame, "id": tid, "x": x, "y": y, "w": w, "h": h})
-    return rows
-
-
-def write_jsonl(path: pathlib.Path, rows):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+import random
+import json
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data-root", required=True)
-    ap.add_argument("--out-dir", required=True)
-    args = ap.parse_args()
-
-    root = pathlib.Path(args.data_root)
-    out = pathlib.Path(args.out_dir)
+    out = pathlib.Path("out/sample-mot")
     out.mkdir(parents=True, exist_ok=True)
+    gt, pr = out / "gt.jsonl", out / "pred.jsonl"
 
-    gt_txt = root / "gt" / "gt.txt"
-    det_txt = root / "det" / "det.txt"
+    random.seed(0)
+    W, H = 1280, 720
 
-    gt_rows = read_mot_txt(gt_txt)
+    def box(cx, cy, w=40, h=80):
+        x = max(0.0, min(W - w, cx - w / 2))
+        y = max(0.0, min(H - h, cy - h / 2))
+        return x, y, w, h
 
-    pr_rows = []
-    if det_txt.exists():
-        for line in det_txt.read_text().splitlines():
-            if not line.strip():
-                continue
-            parts = line.split(",")
-            frame = int(float(parts[0]))
-            pid = f"p{int(float(parts[1]))}"
-            x = float(parts[2])
-            y = float(parts[3])
-            w = float(parts[4])
-            h = float(parts[5])
-            pr_rows.append(
-                {"frame": frame, "id": pid, "x": x, "y": y, "w": w, "h": h, "conf": 1.0}
-            )
-    else:
-        pr_rows = [{**r, "id": f"p{r['id']}", "conf": 1.0} for r in gt_rows]
+    g, p = [], []
+    for t in range(30):
+        objs = {
+            1: (200 + 5 * t, 300),
+            2: (600, 150 + 3 * t),
+            3: (900 - 4 * t, 500 - 2 * t),
+        }
+        for tid, (cx, cy) in objs.items():
+            x, y, w, h = box(cx, cy)
+            g.append({"frame": t, "id": tid, "x": x, "y": y, "w": w, "h": h})
+            if t not in {7, 18}:
+                jx, jy = x + random.uniform(-3, 3), y + random.uniform(-3, 3)
+                p.append(
+                    {
+                        "frame": t,
+                        "id": f"p{tid}",
+                        "x": jx,
+                        "y": jy,
+                        "w": w,
+                        "h": h,
+                        "conf": 1.0,
+                    }
+                )
 
-    write_jsonl(out / "gt.jsonl", gt_rows)
-    write_jsonl(out / "pred.jsonl", pr_rows)
-
-    print(f"[mot] wrote {len(gt_rows)} gt and {len(pr_rows)} preds to {out}")
+    gt.write_text("\n".join(json.dumps(r) for r in g), encoding="utf-8")
+    pr.write_text("\n".join(json.dumps(r) for r in p), encoding="utf-8")
+    print(f"[sample] wrote {len(g)} GT -> {gt}")
+    print(f"[sample] wrote {len(p)} Pred -> {pr}")
 
 
 if __name__ == "__main__":

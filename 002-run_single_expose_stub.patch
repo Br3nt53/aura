@@ -1,0 +1,23 @@
+--- a/tools/run_single.py
++++ b/tools/run_single.py
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ import argparse
+ import json
+ import os
+ import subprocess
+ import pandas as pd
+ import motmetrics as mm
+ 
+ 
+-def run_single_experiment(scenario_path, params_path, out_dir, test_case=None):
++def run_stub_evaluation(scenario_path, params_path, out_dir, test_case=None):
+@@
+     return metrics_path
+ 
+ 
+ if __name__ == "__main__":
+@@
+-    run_single_experiment(args.scenario, args.params, args.out_dir, args.test_case)
++    # Preserve existing CLI behavior
++    run_stub_evaluation(args.scenario, args.params, args.out_dir, args.test_case)
