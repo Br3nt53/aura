@@ -81,3 +81,64 @@ unity/Obj/
 .idea/
 *.swp
 *.swo
+<<<<<<< HEAD
+=======
+
+# Other junk
+*.bak
+*.tmp
+*.orig
+=======
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+
+# Build/output
+out/
+dist/
+build/
+
+# VSCode / IDE
+.vscode/
+
+# Unity (if present)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+unity/Library/
+unity/Temp/
+unity/Logs/
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+unity/Obj/
+*.py[cod]
+.idea/
+.mypy_cache/
+.venv*/
+ros2_ws/
+.colcon/
+log/
+>>>>>>> 725d9b9 (chore: cleanup workspace; single-source ROS pkg; tooling + lint fixes)
+
+# macOS resource forks
+._*
+# local patch bundles and data
+patches/
+*.patch
+*_patches_bundle.zip
+hoot-*.sh
+data/
+>>>>>>> 958b902 (chore: ignore macOS resource forks, patches, local data)
