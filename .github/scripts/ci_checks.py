@@ -28,7 +28,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]  # repo root
 def run(cmd: List[str], cwd: pathlib.Path | None = None, check: bool = True) -> int:
     cwd = cwd or ROOT
     print("+", " ".join(cmd))
-    p = subprocess.run(cmd, cwd=str(cwd))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT)
+    p = subprocess.run(cmd, cwd=str(cwd), env=env)
     if check and p.returncode != 0:
         raise SystemExit(p.returncode)
     return p.returncode
