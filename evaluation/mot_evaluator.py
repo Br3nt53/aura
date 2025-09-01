@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any, Set
 import json
 import numpy as np
 import os
@@ -138,8 +138,7 @@ class MOTEvaluator:
         gt_fragments = Counter()
         pred_to_gt_counts: Dict[object, Counter] = defaultdict(Counter)
         gt_ever_tracked = set()
-        all_pred_tracks = set()
-
+        all_pred_tracks: Set[Any] = set()
         use_bbox = False
         # quick peek: if any GT has bbox keys, we assume bbox/IoU mode
         for fr in frames:
@@ -303,17 +302,18 @@ class MOTEvaluator:
             "meta": meta,
         }
 
-    def _read_jsonl(self, path: str):
-        skipped = 0
-        with open(path, "r", encoding="utf-8") as f:
-            for ln, line in enumerate(f, 1):
-                s = line.strip()
-                if not s:
-                    continue
-                try:
-                    yield json.loads(s)
-                except json.JSONDecodeError as e:
-                    print(f"[WARN] {path}:{ln}: skipping malformed JSONL line: {e}")
-                    skipped += 1
-                    continue
-        self._skipped_counts[os.path.basename(path)] = skipped
+
+def _read_jsonl(self, path: str):
+    skipped = 0
+    with open(path, "r", encoding="utf-8") as f:
+        for ln, line in enumerate(f, 1):
+            s = line.strip()
+            if not s:
+                continue
+            try:
+                yield json.loads(s)
+            except json.JSONDecodeError as e:
+                print(f"[WARN] {path}:{ln}: skipping malformed JSONL line: {e}")
+                skipped += 1
+                continue
+    self._skipped_counts[os.path.basename(path)] = skipped

@@ -37,7 +37,7 @@ def run(cmd: List[str], cwd: pathlib.Path | None = None, check: bool = True) -> 
 def lint() -> None:
     run(["ruff", "check", "."])
     run(["black", "--check", "."])
-    run(["mypy", "--config-file", "mypy.ini"])
+    run(["mypy", "--config-file", "mypy.ini", "."])
 
 
 def tests() -> None:
