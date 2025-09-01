@@ -1,144 +1,21 @@
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-*.egg
-*.egg-info/
-.eggs/
-.pytest_cache/
-.venv/
-.venv*/
-pip-wheel-metadata/
-*.log
-
-# Coverage / type / tox
-.coverage
-htmlcov/
-.tox/
-.mypy_cache/
-
-# ROS 2 colcon artifacts
-ros2_ws/build/
-ros2_ws/install/
-ros2_ws/log/
-# If you keep canonical packages in ros2_examples/ and symlink into ros2_ws/src,
-# DO NOT ignore ros2_ws/src/ globally. Only ignore generated stuff.
-
-# Colcon metadata
-.colcon/
-log/
-
-# Output / scratch
-out/
-tmp/
-*.tmp
-*.bak
-*.orig
-
-# Data & large assets (use git-lfs if you must track)
-data/
-data/**
-
-# Patches & bundles
-*.patch
-patches/
-*_patches_bundle.zip
-*_patches_bundle/
-.aura_evaluator_patches_bundle.zip
-._patches/
-._aura_evaluator_patches_bundle
-
-# Unity
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-UserSettings/
-*.csproj
-*.unityproj
-*.sln
-*.user
-*.pidb
-*.booproj
-*.svd
-unity/Library/
-unity/Temp/
-unity/Logs/
-unity/Obj/
-
-# Editors / IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-<<<<<<< HEAD
-=======
-
-# Other junk
-*.bak
-*.tmp
-*.orig
-=======
-# macOS
-.DS_Store
-
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.pytest_cache/
 .venv/
 
-# Build/output
-out/
-dist/
-build/
-
-# VSCode / IDE
-.vscode/
-
-# Unity (if present)
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-UserSettings/
-unity/Library/
-unity/Temp/
-unity/Logs/
-ros2_ws/build/
-ros2_ws/install/
-ros2_ws/log/
-unity/Obj/
-*.py[cod]
-.idea/
-.mypy_cache/
-.venv*/
-ros2_ws/
-.colcon/
-log/
->>>>>>> 725d9b9 (chore: cleanup workspace; single-source ROS pkg; tooling + lint fixes)
-
-# macOS resource forks
+# macOS
+.DS_Store
 ._*
-# local patch bundles and data
+
+# Local data / artifacts / patches
+out/
+data/
 patches/
 *.patch
 *_patches_bundle.zip
 hoot-*.sh
-data/
->>>>>>> 958b902 (chore: ignore macOS resource forks, patches, local data)
+
+# Colcon / ROS2 build outputs
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
