@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import subprocess
-import yaml
+import yaml  # type: ignore[import-untyped]
 import tempfile
 import os
 

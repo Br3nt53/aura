@@ -4,6 +4,12 @@ import types
 
 import numpy as np
 import pytest
+from typing import Any, TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from importlib.machinery import ModuleSpec
+else:
+    ModuleSpec = Any  # type: ignore[assignment]
 
 # Skip automatically if ROS 2 (rclpy) isn't available (e.g., on a plain CI runner)
 rclpy = pytest.importorskip("rclpy")
@@ -13,7 +19,7 @@ def _load_module(module_path: Path):
     spec = importlib.util.spec_from_file_location(
         "teleop_target_node", str(module_path)
     )
-    mod = importlib.util.module_from_spec(spec)
+    mod = importlib.util.module_from_spec(cast(ModuleSpec, spec))
     assert spec and spec.loader
     spec.loader.exec_module(mod)  # type: ignore[attr-defined]
     return mod
