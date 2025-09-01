@@ -1,44 +1,26 @@
 #!/usr/bin/env python3
-"""
-Unified CI checks for aura.
-
-Runs: ruff, black --check, mypy (ignore missing stubs), pytest
-Optional: a lightweight smoke that exercises tools/run_single.py
-- Legacy CLI:   --scenario ... --out ...
-- New-style CLI: --scenario ... --params ... --out-dir ...
-
-Toggles:
-  AURA_CI_NO_SMOKE=1        -> skip smoke
-  AURA_CI_STRICT_SMOKE=1    -> make smoke required (fail if it fails)
-"""
-
-from __future__ import annotations
-
-import argparse
-import json
 import os
-import pathlib
-import subprocess
 import sys
-from typing import List
+import subprocess
+import json
+import pathlib
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]  # repo root
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
-def run(cmd: List[str], cwd: pathlib.Path | None = None, check: bool = True) -> int:
-    cwd = cwd or ROOT
-    print("+", " ".join(cmd))
+def run(cmd, cwd: pathlib.Path = ROOT) -> None:
+    print("+", *cmd)
     env = os.environ.copy()
+    # Ensure in-repo packages (evaluation/, tools/, etc.) import cleanly in CI
     env["PYTHONPATH"] = str(ROOT)
     p = subprocess.run(cmd, cwd=str(cwd), env=env)
-    if check and p.returncode != 0:
-        raise SystemExit(p.returncode)
-    return p.returncode
+    p.check_returncode()
 
 
 def lint() -> None:
     run(["ruff", "check", "."])
     run(["black", "--check", "."])
+    # honor repo mypy.ini (you already have it in root)
     run(["mypy", "--config-file", "mypy.ini", "."])
 
 
@@ -46,56 +28,41 @@ def tests() -> None:
     run(["pytest", "-q"])
 
 
-def smoke(strict: bool) -> None:
-    out = ROOT / "out" / "tmp"
-    out.mkdir(parents=True, exist_ok=True)
-    metrics = out / "metrics.json"
-    scenario = ROOT / "scenarios" / "crossing_targets.yaml"
+def smoke(strict: bool = False) -> None:
+    # Optional mini smoke so CI can validate tooling pathing and JSON output
+    out = ROOT / "out" / "tmp" / "metrics.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
 
-    rc = run(
+    run(
         [
             sys.executable,
             "tools/run_single.py",
             "--scenario",
-            str(scenario),
+            "scenarios/crossing_targets.yaml",
             "--out",
-            str(metrics),
-        ],
-        check=False,
+            str(out),
+        ]
     )
 
-    if rc != 0 or not metrics.exists():
-        msg = "Smoke did not produce metrics.json"
-        if strict:
-            print("[SMOKE][FAIL]", msg)
-            raise SystemExit(1)
-        else:
-            print("[SMOKE][WARN]", msg)
-            return
-
-    try:
-        data = json.loads(metrics.read_text(encoding="utf-8"))
+    if out.exists():
+        data = json.loads(out.read_text())
         print("[SMOKE] Keys:", list(data.keys()))
-    except Exception as e:
-        txt = f"[SMOKE][WARN] metrics parse: {e}"
-        if strict:
-            print(txt)
-            raise SystemExit(1)
-        print(txt)
+        mota = float(data.get("mota", 0.0))
+        assert 0.0 <= mota <= 1.0, f"MOTA out of range: {mota}"
+    elif strict:
+        raise SystemExit("Smoke failed: metrics.json not produced")
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--no-smoke", action="store_true")
-    ap.add_argument("--strict-smoke", action="store_true")
-    args = ap.parse_args()
-
+    print()
     lint()
+    print()
     tests()
-
-    skip = args.no_smoke or os.getenv("AURA_CI_NO_SMOKE") == "1"
-    strict = args.strict_smoke or os.getenv("AURA_CI_STRICT_SMOKE") == "1"
-    if not skip:
+    print()
+    # Make smoke non-fatal by default; toggle via env
+    do_smoke = os.environ.get("AURA_CI_NO_SMOKE", "0") != "1"
+    strict = os.environ.get("AURA_CI_STRICT_SMOKE", "0") == "1"
+    if do_smoke:
         smoke(strict=strict)
 
 

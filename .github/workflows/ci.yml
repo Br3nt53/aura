@@ -33,13 +33,11 @@ jobs:
 
       - name: Run unified checks
         env:
-          # non-fatal smoke by default; flip to 1 to enforce
           AURA_CI_NO_SMOKE: "0"
           AURA_CI_STRICT_SMOKE: "0"
         run: |
           python .github/scripts/ci_checks.py
 
-  # Optional container smoke; disabled by default (enable by setting if: true)
   docker_smoke:
     if: false
     runs-on: ubuntu-latest
