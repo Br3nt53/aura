@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 def run(cmd, cwd: pathlib.Path = ROOT) -> None:
     print("+", *cmd)
     env = os.environ.copy()
-    # Ensure in-repo packages (evaluation/, tools/, etc.) import cleanly in CI
+    # Ensure in-repo packages (evaluation/, tools/, etc.) import cleanly in CI and locally
     env["PYTHONPATH"] = str(ROOT)
     p = subprocess.run(cmd, cwd=str(cwd), env=env)
     p.check_returncode()
@@ -20,7 +20,6 @@ def run(cmd, cwd: pathlib.Path = ROOT) -> None:
 def lint() -> None:
     run(["ruff", "check", "."])
     run(["black", "--check", "."])
-    # honor repo mypy.ini (you already have it in root)
     run(["mypy", "--config-file", "mypy.ini", "."])
 
 
@@ -29,10 +28,8 @@ def tests() -> None:
 
 
 def smoke(strict: bool = False) -> None:
-    # Optional mini smoke so CI can validate tooling pathing and JSON output
     out = ROOT / "out" / "tmp" / "metrics.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-
     run(
         [
             sys.executable,
@@ -43,7 +40,6 @@ def smoke(strict: bool = False) -> None:
             str(out),
         ]
     )
-
     if out.exists():
         data = json.loads(out.read_text())
         print("[SMOKE] Keys:", list(data.keys()))
@@ -59,7 +55,6 @@ def main() -> None:
     print()
     tests()
     print()
-    # Make smoke non-fatal by default; toggle via env
     do_smoke = os.environ.get("AURA_CI_NO_SMOKE", "0") != "1"
     strict = os.environ.get("AURA_CI_STRICT_SMOKE", "0") == "1"
     if do_smoke:
