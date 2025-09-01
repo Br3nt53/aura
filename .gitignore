@@ -1,156 +1,23 @@
-# -----------------------------
-# OS junk
-# -----------------------------
-.DS_Store
-.AppleDouble
-.LSOverride
-._*                    # macOS resource forks
-
-# -----------------------------
-# Python
-# -----------------------------
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-*.egg
-*.egg-info/
-.eggs/
-.pytest_cache/
-.ruff_cache/
-.venv/
-.venv*/
-pip-wheel-metadata/
-*.log
-
-# Type checkers / test coverage / tox
-.coverage
-htmlcov/
-.tox/
-.mypy_cache/
-
-# -----------------------------
-# ROS 2 / Colcon (keep src clean)
-# -----------------------------
-ros2_ws/build/
-ros2_ws/install/
-ros2_ws/log/
-.colcon/
-log/
-
-# If you decide to place versioned packages directly in ros2_ws/src,
-# delete the next line; for now we keep code in ros2_examples and symlink.
-ros2_ws/src/
-
-# -----------------------------
-# Unity
-# -----------------------------
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-UserSettings/
-*.csproj
-*.unityproj
-*.sln
-*.user
-*.pidb
-*.booproj
-*.svd
-
-# Local Unity caches (if nested under 'unity/')
-unity/Library/
-unity/Temp/
-unity/Logs/
-unity/Obj/
-
-# -----------------------------
-# Editors / IDE
-# -----------------------------
-.vscode/
-.idea/
-*.swp
-*.swo
-<<<<<<< HEAD
-
-# -----------------------------
-# Local dev artifacts & data
-# -----------------------------
-out/
-=======
-<<<<<<< HEAD
-=======
-
-# Other junk
-*.bak
-*.tmp
-*.orig
-=======
 # macOS
 .DS_Store
-
+._*
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
 .venv/
-
-# Build/output
-out/
-dist/
-build/
-
-# VSCode / IDE
-.vscode/
-
-# Unity (if present)
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
-UserSettings/
-unity/Library/
-unity/Temp/
-unity/Logs/
-ros2_ws/build/
-ros2_ws/install/
-ros2_ws/log/
-unity/Obj/
-*.py[cod]
-.idea/
+.ruff_cache/
+.pytest_cache/
 .mypy_cache/
-.venv*/
-ros2_ws/
-.colcon/
-log/
->>>>>>> 725d9b9 (chore: cleanup workspace; single-source ROS pkg; tooling + lint fixes)
-
-# macOS resource forks
-._*
-# local patch bundles and data
->>>>>>> dfd5e6e (chore: ignore macOS resource forks, patches, local data)
+# Local data/artifacts
+out/
+data/
+# Local patch bundles and helpers
 patches/
 *.patch
 *_patches_bundle.zip
 hoot-*.sh
-data/
-<<<<<<< HEAD
-
-# -----------------------------
-# Miscellaneous temp
-# -----------------------------
-*.bak
-*.tmp
-*.orig
-=======
->>>>>>> 958b902 (chore: ignore macOS resource forks, patches, local data)
->>>>>>> dfd5e6e (chore: ignore macOS resource forks, patches, local data)
+# Node/containers (if present)
+node_modules/
+dist/
