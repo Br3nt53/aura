@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-import yaml
+import yaml  # type: ignore[import-untyped]
 import json
 
 

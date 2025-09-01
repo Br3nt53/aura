@@ -1,0 +1,4 @@
+evaluator:
+  objective: "mota"
+pipeline:
+  skip_ros: true
