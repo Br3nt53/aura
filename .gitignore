@@ -142,15 +142,3 @@ patches/
 hoot-*.sh
 data/
 >>>>>>> 958b902 (chore: ignore macOS resource forks, patches, local data)
-
-# macOS resource forks
-._*
-.DS_Store
-
-# Local data / patches / artifacts
-*.patch
-patches/
-*_patches_bundle.zip
-data/
-
-
