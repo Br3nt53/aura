@@ -5,11 +5,11 @@ on:
     branches: [ main, "**" ]
     paths-ignore:
       - '**.md'
+      - 'LICENSE'
       - '**.png'
       - '**.jpg'
       - '**.gif'
       - '**.svg'
-      - 'LICENSE'
 
 permissions:
   contents: read
@@ -25,15 +25,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Show Python
-        run: python3 --version
-      - name: Build image
-        run: docker build -t aura:ci .
+      - name: Guard: no merge-conflict markers
+        run: |
+          if git grep -nE '^(<<<<<<<|=======|>>>>>>>)' -- . ; then
+            echo "::error::Merge conflict markers found; please resolve."; exit 1;
+          fi
+      - name: Build (CI-smoke Dockerfile)
+        run: docker build -f Dockerfile.ci-smoke -t aura:ci .
       - name: Smoke run (evaluator-only)
         run: |
           docker run --rm -v "$PWD":/work -w /work aura:ci bash -lc "
-            python -m venv .venv && source .venv/bin/activate &&                 python -m pip install -U pip wheel setuptools &&                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi;                 if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pytest; fi;                 mkdir -p out/tmp;                 if [ -f tools/run_single.py ]; then                   if [ -f scenarios/crossing_targets.yaml ]; then                     python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json;                   else                     python tools/run_single.py --out out/tmp/metrics.json;                   fi;                   test -s out/tmp/metrics.json;                 else                   echo 'tools/run_single.py not found' && exit 3;                 fi"
-      - name: Upload artifacts
+            python -m venv .venv && source .venv/bin/activate && \
+            python -m pip install -U pip wheel setuptools && \
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi; \
+            if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pytest; fi; \
+            mkdir -p out/tmp; \
+            if [ -f tools/run_single.py ]; then \
+              if [ -f scenarios/crossing_targets.yaml ]; then \
+                python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json; \
+              else \
+                python tools/run_single.py --out out/tmp/metrics.json; \
+              fi; \
+              test -s out/tmp/metrics.json; \
+            else \
+              echo 'tools/run_single.py not found' && exit 3; \
+            fi"
+      - name: Upload smoke artifacts
         uses: actions/upload-artifact@v4
         with:
           name: smoke-artifacts
