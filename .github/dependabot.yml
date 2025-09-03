@@ -1,0 +1,63 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Python (pip) – looks for requirements*.txt, setup.cfg, pyproject.toml
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "13:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    labels: ["dependencies", "python", "dependabot"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      python-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # GitHub Actions – keeps actions pinned & current
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "13:30"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    labels: ["dependencies", "ci", "dependabot"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      gha-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Docker – updates base images in Dockerfile(s)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "14:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    labels: ["dependencies", "docker", "dependabot"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      docker-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
