@@ -32,13 +32,16 @@ jobs:
       - name: Build aura:ci image (with cache)
         uses: docker/build-push-action@v6
         with:
+          builder: ${{ steps.b.outputs.name }}
           context: .
           file: Dockerfile.ci-smoke
           tags: aura:ci
           outputs: type=docker
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
+          no-cache: false
+          pull: false
+          push: false
       - name: Smoke run (docker)
         shell: bash
         run: |
