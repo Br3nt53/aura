@@ -7,4 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Print hello
+      - name: Build (CI-smoke Dockerfile)
+        run: docker build -f Dockerfile.ci-smoke -t aura:ci .
         run: echo "hello from smoke"
