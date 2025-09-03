@@ -11,7 +11,7 @@ permissions:
 
 env:
   SMOKE_METRICS: smoke/metrics.json
-  MIN_MOTA: "0.80"
+  MIN_MOTA: "2.0"
   SMOKE_CMD: python tools/oneclick_pipeline.py --config configs/smoke.yaml --metrics "$SMOKE_METRICS"
 
 jobs:
