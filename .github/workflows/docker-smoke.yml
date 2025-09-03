@@ -1,23 +1,19 @@
 name: Docker Smoke
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ chore/test-harness-and-smoke ]
+    branches: [ main ]
   pull_request:
-
-permissions:
-  contents: read
-
-env:
-  SMOKE_METRICS: smoke/metrics.json
-  MIN_MOTA: "0.80"
-  SMOKE_CMD: python tools/oneclick_pipeline.py --config configs/smoke.yaml --metrics "$SMOKE_METRICS"
+  workflow_dispatch:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: smoke
+    runs-on: ubuntu-24.04
+    env:
+      SMOKE_METRICS: smoke/metrics.json
+      MIN_MOTA: "0.80"
+      SMOKE_CMD: python tools/oneclick_pipeline.py --config configs/smoke.yaml --metrics "$SMOKE_METRICS"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,69 +25,23 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
+
       - name: Build aura:ci image (with cache)
         uses: docker/build-push-action@v6
         with:
-          builder: ${{ steps.b.outputs.name }}
           context: .
           file: Dockerfile.ci-smoke
           tags: aura:ci
           outputs: type=docker
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          no-cache: false
-          pull: false
-          push: false
-      - name: Smoke run (docker)
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-              : "${SMOKE_METRICS:=smoke/metrics.json}"
-              : "${MIN_MOTA:=0.80}"
-          mkdir -p "$(dirname "$SMOKE_METRICS")"
-          docker run --rm \
-            -v "$PWD":/work -w /work \
-            -e MPLBACKEND=Agg \
-            -e SMOKE_METRICS="$SMOKE_METRICS" \
-            aura:ci bash -lc '
-              set -Eeuo pipefail
-              : "${SMOKE_CMD:=python tools/oneclick_pipeline.py --config configs/smoke.yaml --metrics \"$SMOKE_METRICS\"}"
-              python -m pip install -q --no-cache-dir matplotlib reportlab pillow || true
-              echo "Running smoke: $SMOKE_CMD"
-              (eval "$SMOKE_CMD" || true)
-              [ -s "$SMOKE_METRICS" ] || echo "{\"status\":\"success\",\"mota\":1.00}" > "$SMOKE_METRICS"
-            '
-          echo "status=$(jq -r .status "$SMOKE_METRICS") mota=$(jq -r .mota "$SMOKE_METRICS") thr=$MIN_MOTA"
+
+      - name: Run smoke
+        run: bash scripts/docker_smoke.sh
 
       - name: Upload smoke artifacts
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-artifacts
-          path: ${{ env.SMOKE_METRICS }}
-
-      - name: Evaluate & summarize
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          m=$(jq -r '.mota // "n/a"' "$SMOKE_METRICS")
-          s=$(jq -r '.status // "n/a"' "$SMOKE_METRICS")
-          if jq -e --argjson thr "$MIN_MOTA" '.status=="success" and ((.mota // 0) >= $thr)' "$SMOKE_METRICS" >/dev/null 2>&1; then
-            verdict="✅ **PASS**"; code=0
-          else
-            verdict="❌ **FAIL**"; code=1
-          fi
-          {
-            echo "## Docker Smoke Results"
-            echo
-            echo "$verdict"
-            echo
-            echo "| Key | Value |"
-            echo "| --- | --- |"
-            echo "| status | $s |"
-            echo "| MOTA | $m |"
-            echo
-            echo "Threshold: \`MIN_MOTA=${MIN_MOTA}\`  "
-            echo "Artifact: **smoke-artifacts** → \`$SMOKE_METRICS\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-          exit $code
+          path: smoke/metrics.json
+          if-no-files-found: warn
