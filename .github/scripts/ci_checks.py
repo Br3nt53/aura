@@ -45,21 +45,16 @@ def smoke(strict: bool = False) -> None:
     """Non-ROS smoke tests."""
     print("\n--- Running smoke tests ---")
     try:
+        # This smoke test now correctly calls the current version of run_single.py
+        # without the old, unsupported arguments.
         run(
             [
                 sys.executable,
                 "tools/run_single.py",
                 "--scenario",
                 "scenarios/crossing_targets.yaml",
-                "--out",
-                f"{REPO_ROOT}/out/tmp/metrics.json",
-                # Required arguments for the updated script
-                "--rf_weight",
-                "0.5",
-                "--wall_bonus",
-                "0.5",
-                "--track_decay_sec",
-                "1.0",
+                "--out-dir",
+                f"{REPO_ROOT}/out/tmp",
             ]
         )
     except subprocess.CalledProcessError as e:

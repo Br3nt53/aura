@@ -1,0 +1,146 @@
+diff --git a/.github/workflows/docker-smoke-standalone.yml b/.github/workflows/docker-smoke-standalone.yml
+new file mode 100644
+--- /dev/null
++++ b/.github/workflows/docker-smoke-standalone.yml
+@@ -0,0 +1,84 @@
++name: docker-smoke-standalone
++
++on:
++  workflow_dispatch:
++  push:
++    branches:
++      - chore/*
++      - feature/*
++      - fix/*
++
++permissions:
++  contents: read
++
++concurrency:
++  group: docker-smoke-${{ github.ref }}
++  cancel-in-progress: true
++
++jobs:
++  smoke:
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Guard: no merge-conflict markers
++        run: |
++          if git grep -nE '^(<<<<<<<|=======|>>>>>>>)' -- . ; then
++            echo "::error::Merge conflict markers found; please resolve."; exit 1;
++          fi
++
++      - name: Build (CI-smoke Dockerfile)
++        run: docker build -f Dockerfile.ci-smoke -t aura:ci .
++
++      - name: Run smoke (system Python, no venv)
++        run: >
++          docker run --rm -v "$PWD":/work -w /work aura:ci
++          bash -lc "python -m pip install -U pip wheel setuptools;
++                    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi;
++                    if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pytest; fi;
++                    mkdir -p out/tmp;
++                    if [ -f tools/run_single.py ]; then
++                      if [ -f scenarios/crossing_targets.yaml ]; then
++                        python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json;
++                      else
++                        python tools/run_single.py --out out/tmp/metrics.json;
++                      fi;
++                      test -s out/tmp/metrics.json;
++                    else
++                      echo 'tools/run_single.py not found' && exit 3;
++                    fi"
++
++      - name: Upload smoke artifacts
++        uses: actions/upload-artifact@v4
++        with:
++          name: smoke-artifacts
++          path: |
++            out/tmp/metrics.json
++            out/**/report.html
++          if-no-files-found: error
+diff --git a/Makefile b/Makefile
+new file mode 100644
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,40 @@
++.PHONY: help lint fmt type test smoke report
++
++help:
++	@printf "%s\n" "Targets:" \
++	 "  lint    - ruff + black --check" \
++	 "  fmt     - ruff format + black" \
++	 "  type    - mypy" \
++	 "  test    - pytest" \
++	 "  smoke   - build CI image and run evaluator-only smoke" \
++	 "  report  - show smoke artifact if present"
++
++lint:
++	ruff check .
++	black --check .
++
++fmt:
++	ruff format .
++	black .
++
++type:
++	mypy .
++
++test:
++	pytest -q
++
++smoke:
++	docker build -f Dockerfile.ci-smoke -t aura:ci .
++	docker run --rm -v "$$(pwd)":/work -w /work aura:ci bash -lc "python -m pip install -U pip wheel setuptools; if [ -f requirements.txt ]; then pip install -r requirements.txt; fi; if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pytest; fi; mkdir -p out/tmp; if [ -f tools/run_single.py ]; then if [ -f scenarios/crossing_targets.yaml ]; then python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json; else python tools/run_single.py --out out/tmp/metrics.json; fi; test -s out/tmp/metrics.json; else echo 'tools/run_single.py not found' && exit 3; fi"
++
++report:
++	@ls -lh out/tmp/metrics.json 2>/dev/null || echo "No metrics.json yet"
+diff --git a/docs/SMOKE.md b/docs/SMOKE.md
+new file mode 100644
+--- /dev/null
++++ b/docs/SMOKE.md
+@@ -0,0 +1,74 @@
++# Smoke Test Quickstart
++
++## Local (containerized)
++
++1. Build the CI image:
++   ```
++   docker build -f Dockerfile.ci-smoke -t aura:ci .
++   ```
++2. Run the evaluator-only smoke:
++   ```
++   docker run --rm -v "$PWD":/work -w /work aura:ci bash -lc "python -m pip install -U pip wheel setuptools; if [ -f requirements.txt ]; then pip install -r requirements.txt; fi; if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pytest; fi; mkdir -p out/tmp; if [ -f tools/run_single.py ]; then if [ -f scenarios/crossing_targets.yaml ]; then python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json; else python tools/run_single.py --out out/tmp/metrics.json; fi; test -s out/tmp/metrics.json; else echo 'tools/run_single.py not found' && exit 3; fi"
++   ```
++3. Check the artifact:
++   ```
++   ls -lh out/tmp/metrics.json
++   ```
++
++## GitHub Actions (on-demand)
++
++The repository includes a standalone workflow:
++
++- **Workflow name:** `docker-smoke-standalone`
++- **Triggers:** `workflow_dispatch` and `push` to `chore/*`, `feature/*`, `fix/*`
++- **Artifacts:** `out/tmp/metrics.json` (and report if present)
++
++### Manually trigger via CLI
++```
++gh workflow run docker-smoke-standalone --ref <branch>
++gh run watch --exit-status
++```
++
++### Or trigger via UI
++- Go to **Actions → docker-smoke-standalone → Run workflow** and select your branch.
++
++## Notes
++
++- The smoke test uses the container’s **system Python** (no venv) for speed and reliability.
++- A guard step blocks runs if Git merge-conflict markers are present in the repository.
++- The single-run evaluator is currently a **stub**; replace it behind `tools/run_single.py` when wiring the full pipeline.
+
