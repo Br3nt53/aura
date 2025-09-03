@@ -39,6 +39,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+              : "${SMOKE_METRICS:=smoke/metrics.json}"
+              : "${MIN_MOTA:=0.80}"
           mkdir -p "$(dirname "$SMOKE_METRICS")"
           docker run --rm \
             -v "$PWD":/work -w /work \
