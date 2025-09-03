@@ -21,3 +21,10 @@ ros2_ws/install/
 ros2_ws/log/
 .github/scripts/*.bak
 .github/scripts/*.bak
+smoke/
+smoke_artifacts/
+smoke.log
+smoke_latest.log
+output/
+.github/workflows/*.bak.*
+tools/*.bak
