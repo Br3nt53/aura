@@ -36,7 +36,6 @@ jobs:
       - name: Smoke run (evaluator-only)
         run: |
           docker run --rm -v "$PWD":/work -w /work aura:ci bash -lc "
-            python -m venv .venv && source .venv/bin/activate && \
             python -m pip install -U pip wheel setuptools && \
             if [ -f requirements.txt ]; then pip install -r requirements.txt; fi; \
             if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pytest; fi; \
