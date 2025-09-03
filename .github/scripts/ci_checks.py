@@ -11,8 +11,19 @@ import subprocess
 import sys
 from pathlib import Path
 
+# --- Pre-computation and Set-up ---------------------------------------------
+
 REPO_ROOT = Path(__file__).parent.parent.parent
 
+# Add the repository root to the Python path. This is crucial for ensuring that
+# modules and packages within the project (like 'tools', 'evaluation', etc.)
+# can be correctly imported by scripts and tests, regardless of where the
+# script is invoked from.
+sys.path.insert(0, str(REPO_ROOT))
+os.environ["PYTHONPATH"] = f"{REPO_ROOT}{os.pathsep}{os.getenv('PYTHONPATH', '')}"
+
+
+# --- Core Functions ---------------------------------------------------------
 
 def run(cmd: list[str]) -> None:
     """Run a command and check for errors."""
@@ -41,7 +52,7 @@ def smoke(strict: bool = False) -> None:
                 "scenarios/crossing_targets.yaml",
                 "--out",
                 f"{REPO_ROOT}/out/tmp/metrics.json",
-                # Add the new required arguments
+                # Required arguments for the updated script
                 "--rf_weight",
                 "0.5",
                 "--wall_bonus",
@@ -59,12 +70,9 @@ def smoke(strict: bool = False) -> None:
 
 def main() -> None:
     """Run all checks."""
-    # In CI, we want to fail on any error.
-    # Locally, we can be more permissive.
     strict = os.getenv("CI") == "true"
 
     lint()
-    # Basic pytest before more complex smoke tests
     run(["pytest", "-q"])
     smoke(strict=strict)
     print("\n--- All checks passed! ---")
