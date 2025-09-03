@@ -4,24 +4,31 @@ on:
   push:
     branches: [ main ]
   pull_request:
-  workflow_dispatch:
+    branches: [ main ]
+  workflow_dispatch: {}
 
 jobs:
   smoke:
     name: smoke
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
     env:
       SMOKE_METRICS: smoke/metrics.json
       MIN_MOTA: "0.80"
       SMOKE_CMD: python tools/oneclick_pipeline.py --config configs/smoke.yaml --metrics "$SMOKE_METRICS"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install jq (host)
-        run: sudo apt-get update -y && sudo apt-get install -y jq
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
 
       - name: Set up Docker Buildx
+        id: b
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
@@ -36,12 +43,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run smoke
-        run: bash scripts/docker_smoke.sh
+      - name: Run smoke (inside Docker)
+        run: |
+          docker run --rm \
+            -e SMOKE_METRICS="$SMOKE_METRICS" \
+            -e MIN_MOTA="$MIN_MOTA" \
+            -v "$PWD:/work" -w /work \
+            aura:ci bash -lc "$SMOKE_CMD"
 
       - name: Upload smoke artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-artifacts
-          path: smoke/metrics.json
+          path: ${{ env.SMOKE_METRICS }}
           if-no-files-found: warn
