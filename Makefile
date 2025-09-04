@@ -1,19 +1,21 @@
 .DEFAULT_GOAL := eval-fast
 .PHONY: setup eval-fast clean-fast eval-sample clean-sample eval-mot17 clean-mot17 eval-kitti clean-kitti help
 
-
-# Paths & defaults
+# --- Configuration ---
+# Enforce Python 3.11 for consistency with CI
+PYTHON_INTERP ?= python3.11
+# Path to the virtual environment's python
 PY := .venv/bin/python
-SCENARIO ?= scenarios/crossing_targets.yaml
-PARAMS   ?= configs/default.yaml
-OUT      ?= out/tmp
 
-setup: ## Create venv and install minimal deps
-
-	@command -v python3 >/dev/null || { echo "python3 not found"; exit 1; }
-	@test -x .venv/bin/python || python3 -m venv .venv
-	@$(PY) -m pip -q install --upgrade pip >/dev/null
-	@$(PY) -m pip -q install pandas motmetrics pytest pyyaml >/dev/null || true
+# --- Primary Targets ---
+setup: ## Create venv and install all dependencies
+	@command -v $(PYTHON_INTERP) >/dev/null || { echo "$(PYTHON_INTERP) not found, please install Python 3.11."; exit 1; }
+	@echo "[make] Creating virtual environment using $(PYTHON_INTERP)..."
+	@$(PYTHON_INTERP) -m venv .venv
+	@echo "[make] Installing uv into the virtual environment..."
+	@$(PY) -m pip install -U uv
+	@echo "[make] Installing dependencies with uv..."
+	@$(PY) -m uv pip install -r requirements.txt -r requirements-dev.txt
 	@echo "[make] setup complete"
 
 eval-fast: setup ## Run AURA evaluator fast-path (no ROS)
@@ -26,22 +28,11 @@ eval-fast: setup ## Run AURA evaluator fast-path (no ROS)
 	@head -n 20 $(OUT)/metrics.json || true
 
 clean-fast: ## Remove out/tmp
-
 	@echo "[make] Cleaning fast eval outputs ($(OUT))"
 	@rm -rf $(OUT) && mkdir -p $(OUT)
 	@echo "[make] Clean complete."
 
-# ==== Fast AURA eval without ROS (venv + deps) ====
-PY := $(shell [ -x .venv/bin/python ] && echo .venv/bin/python || echo python3)
-SCENARIO ?= scenarios/crossing_targets.yaml
-PARAMS   ?= configs/default.yaml
-OUT      ?= out/tmp
-
-# --- Synthetic sample (no downloads) ---
-sample-setup:
-	@echo "[make] Creating tiny sample MOT JSONL gt/pred…"
-	@.venv/bin/python tools/create_sample_mot_jsonl.py
-
+# --- Other Evaluation Targets ---
 eval-sample: setup ## Generate tiny sample gt/pred and evaluate
 	@echo "[make] Creating tiny sample MOT JSONL gt/pred…"
 	@tools/create_sample_mot_jsonl.py
@@ -54,11 +45,8 @@ eval-sample: setup ## Generate tiny sample gt/pred and evaluate
 	@head -n 20 out/sample-mot/metrics.json || true
 
 clean-sample: ## Remove out/sample-mot
-
 	@rm -rf out/sample-mot && echo "[make] Cleaned out/sample-mot"
 
-# --- MOT17-style local directory (uses data/mot17-mini) ---
-MOT_DIR ?= data/mot17-mini
 eval-mot17: setup ## Convert MOT-style dir to JSONL and evaluate
 	@echo "[make] Converting MOT -> JSONL …"
 	@.venv/bin/python tools/convert_mot_to_jsonl.py --data-root $(MOT_DIR) --out-dir out/mot17-mini
@@ -71,13 +59,7 @@ eval-mot17: setup ## Convert MOT-style dir to JSONL and evaluate
 	@head -n 30 out/mot17-mini/metrics.json || true
 
 clean-mot17: ## Remove out/mot17-mini
-
 	@rm -rf out/mot17-mini && echo "[make] Cleaned out/mot17-mini"
-
-# Keep your existing eval-fast/clean-fast if already present
-
-# --- KITTI-style local directory (uses data/kitti-mini) ---
-KITTI_DIR ?= data/kitti-mini
 
 eval-kitti: setup ## Convert KITTI label file to JSONL and evaluate
 	@echo "[make] Converting KITTI -> JSONL …"
@@ -91,10 +73,7 @@ eval-kitti: setup ## Convert KITTI label file to JSONL and evaluate
 	@head -n 30 out/kitti-mini/metrics.json || true
 
 clean-kitti: ## Remove out/kitti-mini
-
 	@rm -rf out/kitti-mini && echo "[make] Cleaned out/kitti-mini"
-
-.PHONY: help setup eval-fast clean-fast eval-sample clean-sample eval-mot17 clean-mot17 eval-kitti clean-kitti
 
 help: ## Show this help
 	@awk '/^[A-Za-z0-9_.-]+:.*##/ { split($$0,a,":"); tgt=a[1]; i = index($$0, "##"); desc = substr($$0, i+3); printf "%-16s %s\n", tgt, desc }' Makefile

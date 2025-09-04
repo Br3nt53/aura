@@ -24,28 +24,23 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
-          python -m pip install pytest ruff black mypy
-          python -m pip install pandas motmetrics pyyaml
+          uv pip install --system --no-cache -r requirements.txt
+          # Core CI tools (ci_checks.py calls them)
+          uv pip install --system --no-cache pytest ruff black mypy
+          # Libs your tests/smoke may touch
+          uv pip install --system --no-cache pandas motmetrics pyyaml
+          # Type stubs for mypy
+          uv pip install --system --no-cache types-requests types-PyYAML
 
       - name: Run unified checks
         env:
+          # Make smoke non-fatal by default; flip to "1" to enforce
           AURA_CI_NO_SMOKE: "0"
           AURA_CI_STRICT_SMOKE: "0"
         run: |
           python .github/scripts/ci_checks.py
-
-  docker_smoke:
-    if: false
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint_test]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build image
-        run: docker build -t aura-ci .
-      - name: Smoke run (ROS inside container)
-        run: echo "disabled"
