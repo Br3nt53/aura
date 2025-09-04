@@ -1,1 +1,11 @@
-{}
+# Defines a scenario with two targets crossing paths.
+sim_time_s: 15
+targets:
+  - id: 0
+    path: [[-5, -5], [5, 5]]  # Moves from bottom-left to top-right
+    start_time_s: 0
+    end_time_s: 15
+  - id: 1
+    path: [[-5, 5], [5, -5]]  # Moves from top-left to bottom-right
+    start_time_s: 0
+    end_time_s: 15

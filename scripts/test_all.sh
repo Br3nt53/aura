@@ -1,37 +1,19 @@
 #!/usr/bin/env bash
 # test_all.sh — one-click local test harness for Aura
-# Runs: venv setup → lint/type/test → sweep → evaluator-only → tiny BO → bundles artifacts
+# Runs: lint/type/test → sweep → evaluator-only → tiny BO → bundles artifacts
 # Usage: ./scripts/test_all.sh
 set -euo pipefail
 IFS=$'\n\t'
 
 # 0) repo root
 cd "$(dirname "$0")/.."
-
 echo "[info] repo root: $PWD"
 
-# 1) venv (prefer Python 3.11 to mirror CI; fall back to python3)
-PY=python3
-if command -v python3.11 >/dev/null 2>&1; then
-  PY=python3.11
-fi
-echo "[info] using Python interpreter: $($PY -c 'import sys; print(sys.version)')"
-
-$PY -m venv .venv
-# shellcheck disable=SC1091
-source .venv/bin/activate
-python -m pip install -U pip wheel setuptools
-
-if [ -f requirements.txt ]; then
-  echo "[info] installing project requirements.txt ..."
-  pip install -r requirements.txt
-fi
+# 1) Install dependencies with uv (assumes uv is installed)
+echo "[info] ensuring project dependencies are installed with uv..."
+uv pip install -r requirements.txt
 if [ -f requirements-dev.txt ]; then
-  echo "[info] installing requirements-dev.txt ..."
-  pip install -r requirements-dev.txt
-else
-  echo "[warn] requirements-dev.txt missing; installing minimal dev tools"
-  pip install pytest ruff black mypy pre-commit
+  uv pip install -r requirements-dev.txt
 fi
 
 # 2) quality gates (do not hard-fail; continue to produce artifacts)

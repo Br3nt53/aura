@@ -1,12 +1,12 @@
 # AURA CI/Dev container: ROS 2 Humble + Python deps
-FROM ros:humble
+FROM ros:humble-ros-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /aura_ws
 
 # Base deps for build & Python tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-pip python3-venv python3-colcon-common-extensions git \
+    python3.11 python3.11-venv python3-pip git curl \
  && rm -rf /var/lib/apt/lists/*
 
 # Copy repo
