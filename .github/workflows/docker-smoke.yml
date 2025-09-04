@@ -56,7 +56,7 @@ jobs:
             aura:ci bash -lc '
               set -Eeuo pipefail
               : "${SMOKE_CMD:=python tools/oneclick_pipeline.py --config configs/smoke.yaml --metrics \"$SMOKE_METRICS\"}"
-              python -m pip install -q --no-cache-dir matplotlib reportlab pillow || true
+              uv pip install --system --no-cache matplotlib reportlab pillow || true
               echo "Running smoke: $SMOKE_CMD"
               (eval "$SMOKE_CMD" || true)
               [ -s "$SMOKE_METRICS" ] || echo "{\"status\":\"success\",\"mota\":1.00}" > "$SMOKE_METRICS"

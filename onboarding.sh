@@ -7,7 +7,8 @@ echo "--- AURA Project Onboarding ---"
 echo "[1/4] Installing system dependencies..."
 sudo apt-get update
 sudo apt-get install -y ros-humble-desktop python3-pip git
-python3 -m pip install -r requirements.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv pip install --system --no-cache -r requirements.txt
 
 # Step 2: Set up ROS2 Workspace
 echo "[2/4] Setting up ROS2 workspace..."
