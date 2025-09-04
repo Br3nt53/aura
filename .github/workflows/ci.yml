@@ -24,16 +24,18 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+          uv pip install --system --no-cache -r requirements.txt
           # Core CI tools (ci_checks.py calls them)
-          python -m pip install pytest ruff black mypy
+          uv pip install --system --no-cache pytest ruff black mypy
           # Libs your tests/smoke may touch
-          python -m pip install pandas motmetrics pyyaml
+          uv pip install --system --no-cache pandas motmetrics pyyaml
           # Type stubs for mypy
-          python -m pip install types-requests types-PyYAML
+          uv pip install --system --no-cache types-requests types-PyYAML
 
       - name: Run unified checks
         env:
@@ -42,40 +44,3 @@ jobs:
           AURA_CI_STRICT_SMOKE: "0"
         run: |
           python .github/scripts/ci_checks.py
-
-  docker_smoke:
-    # Enable when the image includes ROS Humble; kept off by default.
-    if: false
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint_test]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build image
-        run: docker build -t aura-ci .
-
-      - name: Smoke run (ROS inside container)
-        run: |
-          docker run --rm aura-ci /bin/bash -lc '
-            set -e
-            . /opt/ros/humble/setup.bash || true
-            if [ -f "ros2_ws/install/local_setup.bash" ]; then . ros2_ws/install/local_setup.bash; fi
-
-            mkdir -p out/tmp
-            python3 tools/run_single.py \
-              --scenario scenarios/crossing_targets.yaml \
-              --out out/tmp/metrics.json
-
-            python3 - <<'"'"'PY'"'"'
-            import json, os, sys
-            p = "out/tmp/metrics.json"
-            if not os.path.exists(p):
-                print("metrics.json not produced", file=sys.stderr)
-                sys.exit(1)
-            m = json.load(open(p))
-            mota = float(m.get("mota", 0.0))
-            assert 0.0 <= mota <= 1.0, f"MOTA out of range: {mota}"
-            print("MOTA OK:", mota)
-            PY
-          '

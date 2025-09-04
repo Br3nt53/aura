@@ -1,28 +1,25 @@
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      curl \
+      ca-certificates \
+      build-essential \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
+ENV PATH="/root/.local/bin:${PATH}"
 
-# Optional: project deps if present
-COPY requirements.txt /work/requirements.txt
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+COPY requirements.txt requirements-dev.txt /work/
+
 RUN if [ -f requirements.txt ]; then \
-      python -m pip install -U pip wheel setuptools && \
-      pip install -r requirements.txt; \
-    else \
-      python -m pip install -U pip wheel setuptools; \
+      if command -v uv >/dev/null 2>&1; then \
+        uv pip install --system --no-cache -r requirements.txt -r requirements-dev.txt; \
+      else \
+        python -m pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt; \
+      fi; \
     fi
 
-# Dev tools pins if present
-COPY requirements-dev.txt /work/requirements-dev.txt
-RUN if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-
-# Source code last for better layer cache
 COPY . /work
