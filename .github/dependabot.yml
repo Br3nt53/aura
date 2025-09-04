@@ -61,3 +61,4 @@ updates:
       docker-minor-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+
