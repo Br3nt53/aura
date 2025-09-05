@@ -1,353 +1,113 @@
-# AURA Experiments Runner Bundle
+# AURA Multi-Target Tracking Toolkit
 
-A comprehensive and self-contained toolkit for parameter sweeps, multi-target tracking stress tests, RF clutter injection, Unity-based HUD UX iteration, hardware integration, and full-system evaluation via ROS 2.
+[![CI](https://github.com/br3nt53/aura/actions/workflows/ci.yml/badge.svg)](https://github.com/br3nt53/aura/actions/workflows/ci.yml)
+[![Docker Smoke Test](https://github.com/br3nt53/aura/actions/workflows/docker-smoke.yml/badge.svg)](https://github.com/br3nt53/aura/actions/workflows/docker-smoke.yml)
 
----
+**AURA** is a comprehensive, self-contained toolkit for developing, testing, and evaluating multi-target tracking algorithms. It provides a robust framework for parameter sweeps, full-system simulation with ROS 2, and rapid, Docker-free local evaluation.
 
-## 🚀 Quickstart
+## ✨ Key Features
 
-### Option A: Local Fast Evaluation (No ROS or Docker)
+* **Dual-Mode Operation:** Run fast, lightweight evaluations locally without ROS, or launch the full ROS 2 simulation pipeline for high-fidelity testing.
+* **ROS 2 Integration:** Includes a complete ROS 2 package (`aura_examples`) with nodes for scenario playback, simulated RF sensing, sensor fusion, and data recording.
+* **Containerized Environment:** A Docker-based setup ensures a consistent and reproducible environment for development and testing.
+* **Stress Testing:** Comes with a suite of challenging scenarios to validate tracker performance under adverse conditions like high clutter and dense targets.
+* **Hardware & Unity Ready:** Provides infrastructure for integrating real hardware sensors and a bridge for live parameter tuning from external GUIs like Unity.
+* **CI/CD Integration:** Includes GitHub Actions workflows for automated linting, testing, and Docker smoke tests on every push.
 
-1.  **Install uv**
-    ```bash
-    curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
-    ```
+## 🚀 Getting Started
 
-2.  **Install Dependencies**
-    ```bash
-    uv pip install -r requirements.txt -r requirements-dev.txt
-    ```
+There are two primary ways to use the AURA toolkit.
 
-3.  **Run Fast Evaluation**
-    This performs ground-truth generation, prediction synthesis, evaluation, and outputs metrics:
-    ```bash
-    make eval-fast
-    ```
-    Results are printed to the terminal and saved to `out/tmp/metrics.json`.
+### Option A: Docker (Recommended)
 
-### Option B: Full System via Docker & ROS 2
+This is the easiest and most reliable way to run the full simulation.
 
-1.  **Start the Full System**
-    Build the Docker image and launch the container:
+1.  **Start the System:** Build the Docker image and launch the container in the background.
     ```bash
     ./start_aura.sh
     ```
-2.  **Stop the System**
+
+2.  **Run the Stress Test Suite:** Execute the full suite of tests inside the running container.
+    ```bash
+    docker compose exec aura ./run_stress_tests.sh
+    ```
+    Results will be saved to the `out/stress_tests` directory on your host machine.
+
+3.  **Stop the System:** Shut down and remove the container.
     ```bash
     ./stop_aura.sh
     ```
 
-## ✨ Features & Components
+### Option B: Local Environment Setup
 
-### Experimentation & Evaluation Tools
+This is for development and running evaluations without Docker. You must have **ROS 2 Humble** and **Python 3.11** installed.
 
-* **Parameter Sweeps & Reports**: `tools/run_experiments.py` supports grid sweeps and generates standalone HTML heatmap reports.
-* **Single Scenario Runner**: `tools/run_single.py` is the replaceable evaluation entry point for real simulation or evaluation workflows.
-* **Scenario Definitions**: YAML files under `scenarios/` (e.g., `crossing_targets.yaml`, `rf_clutter.yaml`) define test environments.
-
-### Unity Integration & Live Tuning
-
-* **Unity HUD Support**: Unity scripts (`GhostOverlay.cs`, `ParamSender.cs`) in `unity/Assets/...` enable confidence-based visualization and parameter control.
-* **ROS 2 Param Bridge**: The `aura_tools` package supports real-time parameter injection via `/aura/param_set`.
-
-### ROS 2 Packages & Launch Infrastructure
-
-* **ROS Examples Package (`aura_examples`)**: Includes simulated nodes (`scenario_player_node.py`, `mock_rf_node.py`, `fusion_sim_node.py`, `recorder_node.py`, `teleop_target_node.py`) and a launch pipeline (`bringup.launch.py`) for scenario → RF → fusion → record workflows.
-
-    Run via:
+1.  **Install uv**:
     ```bash
-    python3 tools/run_single.py \
-      --scenario scenarios/crossing_targets.yaml \
-      --rf_weight 0.6 --wall_bonus 0.4 --track_decay_sec 1.5 \
-      --ros2_pipeline --workdir out/tmp
+    curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
     ```
 
-### Hardware Integration
-
-* **Plug-and-Play Sensor Support**: Udev rules in `hardware/udev/` ensure stable device names (e.g. `/dev/aura_uwb0`).
-* **Sensor Manager (`sensor_bringup.launch.py`)**: Auto-launches/stops driver nodes on device plug/unplug.
-* **Fusion Dynamic Discovery**: Subscribes to any `/presence_hint` topics automatically.
-* Example bridge launchers included under `hardware/drivers/`.
-
-### Golden Configurations & Bound Derivation
-
-* **Golden Parameters**: Stored in `config/golden_params.yaml`, auto-loaded by the fusion tracker.
-* **Safe Bounds for Unity**: `unity/Assets/StreamingAssets/ParamBounds.json` enforces experimental slider limits via:
+2.  **Install Dependencies**:
     ```bash
-    python3 tools/freeze_golden.py
-    python3 tools/derive_bounds.py
+    uv pip install -r requirements.txt -r requirements-dev.txt
     ```
 
-### Stability-Weighted Fusion
-
-* `fusion_tracker_node.py` implements gating + exponential moving average (EMA) stability, using parameters like `assoc_gate_m`, `track_decay_sec`, `stability_alpha`, `birth_stability_min`, `delete_stability_min`, and `rf_weight`. Outputs predictions via `/aura/predictions_jsonl`.
-
-### Adversarial & Regression Testing
-
-* **Challenge Bags**: Generate adversarial test scenarios using:
+3.  **Run a Fast Evaluation:** Execute a single scenario evaluation without starting the ROS 2 system. This is great for quick checks.
     ```bash
-    tools/make_challenge_bag.sh scenarios/crossing_targets.yaml out/challenge true
+    # Ensure the scenario file has content first!
+    make eval-fast SCENARIO=scenarios/rf_clutter.yaml PARAMS=scenarios/params.min.yaml OUT=out/fast-eval
     ```
-    Then evaluate via standard pipeline or export using ROS bag tools.
+    Metrics will be saved to `out/fast-eval/metrics.json`.
 
----
-## 📂 Repository Layout
+## ⚙️ Core Workflows
 
-Of course. Here are the complete, updated files to finalize your migration to uv and standardize your project's environment.
+### Running a Single Experiment
 
-1. scripts/docker_smoke.sh (Updated)
+The `tools/run_single.py` script is the main entry point for all evaluations. It can generate ground truth data from a scenario, synthesize predictions (for non-ROS runs), and calculate performance metrics.
 
-This script is now significantly simplified. It no longer creates a redundant virtual environment (.venv) inside the container. Instead, it directly uses the system's Python environment, where uv has already installed all necessary dependencies, making the smoke test faster and more efficient.
+```bash
+python3 tools/run_single.py \
+    --scenario scenarios/rf_clutter.yaml \
+    --params scenarios/params.min.yaml \
+    --out-dir out/my_experiment
+Running the Full ROS 2 Pipeline
+
+You can launch the entire ROS 2 simulation pipeline, which includes the scenario player, mock sensor, fusion tracker, and recorder nodes.
 
 Bash
-#!/usr/bin/env bash
-# docker_smoke.sh — minimal functional smoke in Docker
-# Builds local image and runs evaluator-only to assert output exists.
-# Usage: ./scripts/docker_smoke.sh
-set -euo pipefail
-IFS=$'\n\t'
-cd "$(dirname "$0")/.."
+# Source your ROS 2 environment
+source /opt/ros/humble/setup.bash
 
-IMAGE="aura:ci"
-echo "[stage] docker build → $IMAGE"
-docker build -t "$IMAGE" .
+# Build and source the AURA workspace
+cd ros2_ws
+colcon build
+source install/setup.bash
+cd ..
 
-echo "[stage] docker run smoke"
-docker run --rm -v "$PWD":/work -w /work "$IMAGE" bash -lc "\
-  set -e
-  echo '[smoke] Running the single evaluation...'
-  mkdir -p out/tmp
-  if [ -f tools/run_single.py ]; then
-    if [ -f scenarios/crossing_targets.yaml ]; then
-      python tools/run_single.py --scenario scenarios/crossing_targets.yaml --out out/tmp/metrics.json
-    else
-      python tools/run_single.py --out out/tmp/metrics.json
-    fi
-    test -s out/tmp/metrics.json
-  else
-    echo 'tools/run_single.py not found'; exit 3
-  fi"
+# Launch the simulation
+ros2 launch aura_examples bringup.launch.py
+The Makefile provides several helpful commands for local development:
 
-echo "[ok] smoke passed; metrics present at out/tmp/metrics.json"
-2. Makefile (Updated)
+make setup: Installs all dependencies using uv.
 
-The Makefile has been modified to remove the creation of a local .venv. The setup target now directly uses uv to install dependencies, assuming uv is installed on the user's system. All other targets have been updated to call the system's python instead of a virtual environment's python.
+make test: Runs the pytest unit and integration tests.
 
-Makefile
-.DEFAULT_GOAL := eval-fast
-.PHONY: setup eval-fast clean-fast eval-sample clean-sample eval-mot17 clean-mot17 eval-kitti clean-kitti help
+make lint: Runs ruff and black to check for code style issues.
 
-# --- Configuration ---
-# All targets will now use the system's default python interpreter.
-PY := python
+make fmt: Automatically formats the code with ruff and black.
 
-# --- Primary Targets ---
-setup: ## Install all dependencies using uv
-	@command -v uv >/dev/null || { echo "uv not found, please install it first. See https://astral.sh/uv"; exit 1; }
-	@echo "[make] Installing dependencies with uv..."
-	@uv pip install -r requirements.txt -r requirements-dev.txt
-	@echo "[make] setup complete"
-
-eval-fast: setup ## Run AURA evaluator fast-path (no ROS)
-	@echo "[make] Running AURA evaluator fast-path (SKIP_ROS=1, USE_AURA_EVALUATOR=1)"
-	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
-		--scenario $(SCENARIO) \
-		--params   $(PARAMS) \
-		--out-dir  $(OUT)
-	@echo "[make] Done. Metrics at $(OUT)/metrics.json"
-	@head -n 20 $(OUT)/metrics.json || true
-
-clean-fast: ## Remove out/tmp
-	@echo "[make] Cleaning fast eval outputs ($(OUT))"
-	@rm -rf $(OUT) && mkdir -p $(OUT)
-	@echo "[make] Clean complete."
-
-# --- Other Evaluation Targets ---
-eval-sample: setup ## Generate tiny sample gt/pred and evaluate
-	@echo "[make] Creating tiny sample MOT JSONL gt/pred…"
-	@$(PY) tools/create_sample_mot_jsonl.py
-	@echo "[make] Evaluating sample with AURA evaluator (no ROS)…"
-	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
-		--scenario $(SCENARIO) \
-		--params   $(PARAMS) \
-		--out-dir  out/sample-mot
-	@echo "[make] Metrics at out/sample-mot/metrics.json"
-	@head -n 20 out/sample-mot/metrics.json || true
-
-clean-sample: ## Remove out/sample-mot
-	@rm -rf out/sample-mot && echo "[make] Cleaned out/sample-mot"
-
-eval-mot17: setup ## Convert MOT-style dir to JSONL and evaluate
-	@echo "[make] Converting MOT -> JSONL …"
-	@$(PY) tools/convert_mot_to_jsonl.py --data-root $(MOT_DIR) --out-dir out/mot17-mini
-	@echo "[make] Evaluating MOT17-mini with AURA evaluator (no ROS)…"
-	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
-		--scenario $(SCENARIO) \
-		--params   $(PARAMS) \
-		--out-dir  out/mot17-mini
-	@echo "[make] Metrics at out/mot17-mini/metrics.json"
-	@head -n 30 out/mot17-mini/metrics.json || true
-
-clean-mot17: ## Remove out/mot17-mini
-	@rm -rf out/mot17-mini && echo "[make] Cleaned out/mot17-mini"
-
-eval-kitti: setup ## Convert KITTI label file to JSONL and evaluate
-	@echo "[make] Converting KITTI -> JSONL …"
-	@$(PY) tools/convert_kitti_to_jsonl.py --labels $(KITTI_DIR)/label_02/0000.txt --out out/kitti-mini/gt.jsonl
-	@echo "[make] Evaluating KITTI-mini with AURA evaluator (no ROS)…"
-	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
-		--scenario $(SCENARIO) \
-		--params   $(PARAMS) \
-		--out-dir  out/kitti-mini
-	@echo "[make] Metrics at out/kitti-mini/metrics.json"
-	@head -n 30 out/kitti-mini/metrics.json || true
-
-clean-kitti: ## Remove out/kitti-mini
-	@rm -rf out/kitti-mini && echo "[make] Cleaned out/kitti-mini"
-
-help: ## Show this help
-	@awk '/^[A-Za-z0-9_.-]+:.*##/ { split($$0,a,":"); tgt=a[1]; i = index($$0, "##"); desc = substr($$0, i+3); printf "%-16s %s\n", tgt, desc }' Makefile
-3. README.md (Updated)
-
-The README.md has been updated to reflect the new uv-based setup process. The instructions now guide users to install uv and use it to manage their dependencies, removing all references to make setup for creating a virtual environment.
-
-Markdown
-# AURA Experiments Runner Bundle
-
-A comprehensive and self-contained toolkit for parameter sweeps, multi-target tracking stress tests, RF clutter injection, Unity-based HUD UX iteration, hardware integration, and full-system evaluation via ROS 2.
-
----
-
-## 🚀 Quickstart
-
-### Option A: Local Fast Evaluation (No ROS or Docker)
-
-1.  **Install uv**
-    ```bash
-    curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
-    ```
-
-2.  **Install Dependencies**
-    ```bash
-    uv pip install -r requirements.txt -r requirements-dev.txt
-    ```
-
-3.  **Run Fast Evaluation**
-    This performs ground-truth generation, prediction synthesis, evaluation, and outputs metrics:
-    ```bash
-    make eval-fast
-    ```
-    Results are printed to the terminal and saved to `out/tmp/metrics.json`.
-
-### Option B: Full System via Docker & ROS 2
-
-1.  **Start the Full System**
-    Build the Docker image and launch the container:
-    ```bash
-    ./start_aura.sh
-    ```
-2.  **Stop the System**
-    ```bash
-    ./stop_aura.sh
-    ```
-
-## ✨ Features & Components
-
-### Experimentation & Evaluation Tools
-
-* **Parameter Sweeps & Reports**: `tools/run_experiments.py` supports grid sweeps and generates standalone HTML heatmap reports.
-* **Single Scenario Runner**: `tools/run_single.py` is the replaceable evaluation entry point for real simulation or evaluation workflows.
-* **Scenario Definitions**: YAML files under `scenarios/` (e.g., `crossing_targets.yaml`, `rf_clutter.yaml`) define test environments.
-
-### Unity Integration & Live Tuning
-
-* **Unity HUD Support**: Unity scripts (`GhostOverlay.cs`, `ParamSender.cs`) in `unity/Assets/...` enable confidence-based visualization and parameter control.
-* **ROS 2 Param Bridge**: The `aura_tools` package supports real-time parameter injection via `/aura/param_set`.
-
-### ROS 2 Packages & Launch Infrastructure
-
-* **ROS Examples Package (`aura_examples`)**: Includes simulated nodes (`scenario_player_node.py`, `mock_rf_node.py`, `fusion_sim_node.py`, `recorder_node.py`, `teleop_target_node.py`) and a launch pipeline (`bringup.launch.py`) for scenario → RF → fusion → record workflows.
-
-    Run via:
-    ```bash
-    python3 tools/run_single.py \
-      --scenario scenarios/crossing_targets.yaml \
-      --rf_weight 0.6 --wall_bonus 0.4 --track_decay_sec 1.5 \
-      --ros2_pipeline --workdir out/tmp
-    ```
-
-### Hardware Integration
-
-* **Plug-and-Play Sensor Support**: Udev rules in `hardware/udev/` ensure stable device names (e.g. `/dev/aura_uwb0`).
-* **Sensor Manager (`sensor_bringup.launch.py`)**: Auto-launches/stops driver nodes on device plug/unplug.
-* **Fusion Dynamic Discovery**: Subscribes to any `/presence_hint` topics automatically.
-* Example bridge launchers included under `hardware/drivers/`.
-
-### Golden Configurations & Bound Derivation
-
-* **Golden Parameters**: Stored in `config/golden_params.yaml`, auto-loaded by the fusion tracker.
-* **Safe Bounds for Unity**: `unity/Assets/StreamingAssets/ParamBounds.json` enforces experimental slider limits via:
-    ```bash
-    python3 tools/freeze_golden.py
-    python3 tools/derive_bounds.py
-    ```
-
-### Stability-Weighted Fusion
-
-* `fusion_tracker_node.py` implements gating + exponential moving average (EMA) stability, using parameters like `assoc_gate_m`, `track_decay_sec`, `stability_alpha`, `birth_stability_min`, `delete_stability_min`, and `rf_weight`. Outputs predictions via `/aura/predictions_jsonl`.
-
-### Adversarial & Regression Testing
-
-* **Challenge Bags**: Generate adversarial test scenarios using:
-    ```bash
-    tools/make_challenge_bag.sh scenarios/crossing_targets.yaml out/challenge true
-    ```
-    Then evaluate via standard pipeline or export using ROS bag tools.
-
----
-## 📂 Repository Layout
-/
-├── .github/
-├── config/
-│   └── golden_params.yaml
-├── evaluation/
-├── hardware/
-│   ├── udev/
-│   └── drivers/
-├── ros2_examples/
-├── scripts/
-├── scenarios/
-├── tests/
-├── tools/
-│   ├── run_experiments.py
-│   ├── run_single.py
-│   ├── optimize_experiments.py
-│   ├── freeze_golden.py
-│   ├── derive_bounds.py
-│   └── make_challenge_bag.sh
-├── unity/Assets/NeuromorphAR/Scripts/
-│   ├── GhostOverlay.cs
-│   └── ParamSender.cs
-├── Dockerfile
-├── docker-compose.yml
-├── Makefile
-├── start_aura.sh
-├── stop_aura.sh
-├── run_stress_tests.sh
-├── onboarding.sh
-├── cleanup.sh
-├── requirements*.txt
-└── README.md
-
-
----
-## Summary of Capabilities
-* Fast evaluation via `make eval-fast`
-* Interactive sweeps & heatmap reporting
-* Unity-based HUD visualization & live tuning
-* Full ROS 2 pipeline simulation and evaluation
-* Hardware integration with dynamic sensor support
-* Golden configuration generation and bounds derivation for safe UI
-* Stability-weighted fusion for enhanced tracking robustness
-* Adversarial testing workflows using challenge bags
-
+📂 Repository Structure
+.
+├── .github/              # CI/CD workflows
+├── config/               # Configuration files (e.g., golden_params.yaml)
+├── evaluation/           # Core evaluation logic (mot_evaluator.py)
+├── hardware/             # Hardware integration (udev rules, configs)
+├── ros2_examples/        # The primary ROS 2 package with nodes and launch files
+├── ros2_ws/              # ROS 2 workspace directory
+├── scenarios/            # YAML files defining experiment conditions
+├── tools/                # Command-line scripts for running experiments
+├── tests/                # Pytest unit and integration tests
+├── unity/                # C# scripts for Unity integration
+├── Dockerfile            # Defines the main development/simulation container
+├── docker-compose.yml    # Docker Compose configuration
+└── Makefile              # Commands for setup, testing, and evaluation
