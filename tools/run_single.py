@@ -8,7 +8,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Any, Tuple
 
 # Ensure repo root is importable when running from tools/
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -39,35 +39,26 @@ except Exception:
 
 # Prefer in-repo evaluator; provide a safe fallback if unavailable.
 try:
-    from evaluation.mot_evaluator import MOTEvaluator, EvalParams  # type: ignore
-except Exception as _e:
+    from evaluation.mot_evaluator import MOTEvaluator, EvalParams  # type: ignore[import]
+except ImportError as e:
+    logger.debug("evaluation.mot_evaluator not available: %s; using stub.", e)
 
-    class EvalParams:
-        """Fallback params stub."""
+    class _EvalParams:
+        """Minimal fallback when evaluation package is absent."""
 
         pass
 
-    class MOTEvaluator:
-        """Very simple fallback evaluator to keep the pipeline smoke-testable."""
-
-        def __init__(self, *_a, **_k) -> None:
+    class _MOTEvaluator:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             pass
 
-        def evaluate(self, pred_path: str, gt_path: str) -> dict:
-            ok = Path(pred_path).exists() and Path(gt_path).exists()
-            return {
-                "precision": 1.0 if ok else 0.0,
-                "recall": 0.5 if ok else 0.0,
-                "mota": 0.5 if ok else 0.0,
-                "fragments": 0,
-                "meta": {
-                    "data_quality": {
-                        "skipped_lines": {str(gt_path): 0, str(pred_path): 0}
-                    }
-                },
-            }
+        def evaluate(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+            # Return an empty metrics dict by default; the caller may compute simple metrics.
+            return {}
 
-    logger.warning("Falling back to built-in MOTEvaluator stub: %s", _e)
+    # Expose the expected public names via aliases (no redefinition for type checkers).
+    EvalParams = _EvalParams  # type: ignore[assignment]
+    MOTEvaluator = _MOTEvaluator  # type: ignore[assignment]
 
 
 def _bool_env(name: str) -> bool:
