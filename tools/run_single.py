@@ -81,7 +81,9 @@ def _synthesize_jsonl(jsonl_path: Path, kind: str) -> None:
         {"frame": 1, "id": 1, "x": 50.0, "y": 50.0, "w": 40, "h": 80, "score": 0.99},
         {"frame": 2, "id": 1, "x": 55.0, "y": 55.0, "w": 40, "h": 80, "score": 0.99},
     ]
-    jsonl_path.write_text("\n".join(json.dumps(d) for d in data) + "\n", encoding="utf-8")
+    jsonl_path.write_text(
+        "\n".join(json.dumps(d) for d in data) + "\n", encoding="utf-8"
+    )
     logger.info("Synthesized %s at %s (%d lines)", kind, jsonl_path, len(data))
 
 
@@ -107,7 +109,9 @@ def evaluate_predictions(
     logger.info("Evaluating with TrackEval wrapper …")
     _run(cmd)
     if not metrics_path.exists():
-        raise FileNotFoundError(f"Expected metrics at {metrics_path}, but it was not created.")
+        raise FileNotFoundError(
+            f"Expected metrics at {metrics_path}, but it was not created."
+        )
     logger.info("Metrics saved to %s", metrics_path)
 
 
@@ -138,9 +142,13 @@ def main() -> None:
     _configure_logging()
     args = build_arg_parser().parse_args()
 
+    # Keep main's UX: warn if scenario missing, but do not fail (we synthesize anyway).
     scenario_path = Path(args.scenario)
     if not scenario_path.exists():
-        logger.warning("Scenario file %s not found; proceeding with synthesized data.", args.scenario)
+        logger.warning(
+            "Scenario file %s not found; proceeding with synthesized data.",
+            args.scenario,
+        )
 
     gt_path, pred_path, metrics_path = resolve_paths(args)
 
