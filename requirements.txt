@@ -3,3 +3,4 @@ pyyaml
 scikit-optimize
 pandas
 motmetrics
+trackeval
