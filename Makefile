@@ -2,20 +2,14 @@
 .PHONY: setup eval-fast clean-fast eval-sample clean-sample eval-mot17 clean-mot17 eval-kitti clean-kitti help
 
 # --- Configuration ---
-# Enforce Python 3.11 for consistency with CI
-PYTHON_INTERP ?= python3.11
-# Path to the virtual environment's python
-PY := .venv/bin/python
+# All targets will now use the system's default python interpreter.
+PY := python
 
 # --- Primary Targets ---
-setup: ## Create venv and install all dependencies
-	@command -v $(PYTHON_INTERP) >/dev/null || { echo "$(PYTHON_INTERP) not found, please install Python 3.11."; exit 1; }
-	@echo "[make] Creating virtual environment using $(PYTHON_INTERP)..."
-	@$(PYTHON_INTERP) -m venv .venv
-	@echo "[make] Installing uv into the virtual environment..."
-	@$(PY) -m pip install -U uv
+setup: ## Install all dependencies using uv
+	@command -v uv >/dev/null || { echo "uv not found, please install it first. See https://astral.sh/uv"; exit 1; }
 	@echo "[make] Installing dependencies with uv..."
-	@$(PY) -m uv pip install -r requirements.txt -r requirements-dev.txt
+	@uv pip install -r requirements.txt -r requirements-dev.txt
 	@echo "[make] setup complete"
 
 eval-fast: setup ## Run AURA evaluator fast-path (no ROS)
@@ -35,7 +29,7 @@ clean-fast: ## Remove out/tmp
 # --- Other Evaluation Targets ---
 eval-sample: setup ## Generate tiny sample gt/pred and evaluate
 	@echo "[make] Creating tiny sample MOT JSONL gt/pred…"
-	@tools/create_sample_mot_jsonl.py
+	@$(PY) tools/create_sample_mot_jsonl.py
 	@echo "[make] Evaluating sample with AURA evaluator (no ROS)…"
 	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
 		--scenario $(SCENARIO) \
@@ -49,9 +43,9 @@ clean-sample: ## Remove out/sample-mot
 
 eval-mot17: setup ## Convert MOT-style dir to JSONL and evaluate
 	@echo "[make] Converting MOT -> JSONL …"
-	@.venv/bin/python tools/convert_mot_to_jsonl.py --data-root $(MOT_DIR) --out-dir out/mot17-mini
+	@$(PY) tools/convert_mot_to_jsonl.py --data-root $(MOT_DIR) --out-dir out/mot17-mini
 	@echo "[make] Evaluating MOT17-mini with AURA evaluator (no ROS)…"
-	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 .venv/bin/python tools/run_single.py \
+	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
 		--scenario $(SCENARIO) \
 		--params   $(PARAMS) \
 		--out-dir  out/mot17-mini
@@ -63,7 +57,7 @@ clean-mot17: ## Remove out/mot17-mini
 
 eval-kitti: setup ## Convert KITTI label file to JSONL and evaluate
 	@echo "[make] Converting KITTI -> JSONL …"
-	@.venv/bin/python tools/convert_kitti_to_jsonl.py --labels $(KITTI_DIR)/label_02/0000.txt --out out/kitti-mini/gt.jsonl
+	@$(PY) tools/convert_kitti_to_jsonl.py --labels $(KITTI_DIR)/label_02/0000.txt --out out/kitti-mini/gt.jsonl
 	@echo "[make] Evaluating KITTI-mini with AURA evaluator (no ROS)…"
 	@USE_AURA_EVALUATOR=1 SKIP_ROS=1 $(PY) tools/run_single.py \
 		--scenario $(SCENARIO) \

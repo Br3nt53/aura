@@ -42,12 +42,17 @@ This is the easiest and most reliable way to run the full simulation.
 
 This is for development and running evaluations without Docker. You must have **ROS 2 Humble** and **Python 3.11** installed.
 
-1.  **Setup Virtual Environment:** Create a Python virtual environment and install all dependencies.
+1.  **Install uv**:
     ```bash
-    make setup
+    curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
     ```
 
-2.  **Run a Fast Evaluation:** Execute a single scenario evaluation without starting the ROS 2 system. This is great for quick checks.
+2.  **Install Dependencies**:
+    ```bash
+    uv pip install -r requirements.txt -r requirements-dev.txt
+    ```
+
+3.  **Run a Fast Evaluation:** Execute a single scenario evaluation without starting the ROS 2 system. This is great for quick checks.
     ```bash
     # Ensure the scenario file has content first!
     make eval-fast SCENARIO=scenarios/rf_clutter.yaml PARAMS=scenarios/params.min.yaml OUT=out/fast-eval
@@ -61,23 +66,15 @@ This is for development and running evaluations without Docker. You must have **
 The `tools/run_single.py` script is the main entry point for all evaluations. It can generate ground truth data from a scenario, synthesize predictions (for non-ROS runs), and calculate performance metrics.
 
 ```bash
-# Activate virtual environment
-source .venv/bin/activate
-
-# Run the script
-python tools/run_single.py \
+python3 tools/run_single.py \
     --scenario scenarios/rf_clutter.yaml \
     --params scenarios/params.min.yaml \
     --out-dir out/my_experiment
-
-
-
 Running the Full ROS 2 Pipeline
 
 You can launch the entire ROS 2 simulation pipeline, which includes the scenario player, mock sensor, fusion tracker, and recorder nodes.
 
-Bash:
-
+Bash
 # Source your ROS 2 environment
 source /opt/ros/humble/setup.bash
 
@@ -89,12 +86,9 @@ cd ..
 
 # Launch the simulation
 ros2 launch aura_examples bringup.launch.py
-
-
-
 The Makefile provides several helpful commands for local development:
 
-make setup: Installs all dependencies.
+make setup: Installs all dependencies using uv.
 
 make test: Runs the pytest unit and integration tests.
 
@@ -102,9 +96,7 @@ make lint: Runs ruff and black to check for code style issues.
 
 make fmt: Automatically formats the code with ruff and black.
 
-
 📂 Repository Structure
-
 .
 ├── .github/              # CI/CD workflows
 ├── config/               # Configuration files (e.g., golden_params.yaml)
@@ -119,6 +111,3 @@ make fmt: Automatically formats the code with ruff and black.
 ├── Dockerfile            # Defines the main development/simulation container
 ├── docker-compose.yml    # Docker Compose configuration
 └── Makefile              # Commands for setup, testing, and evaluation
-
-
-
