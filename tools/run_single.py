@@ -2,8 +2,8 @@
 """
 Single-scenario runner for Aura smoke tests.
 
-- Compatible CLI (supports --scenario, --out, --out-dir) like main.
-- Always ensures non-empty gt.jsonl and pred.jsonl (synthesizes if missing).
+- Compatible CLI (supports --scenario, --out, --out-dir).
+- Ensures non-empty gt.jsonl and pred.jsonl (synthesizes if missing).
 - Hands evaluation off to evaluation/run_trackeval.py (HOTA-ready metrics.json).
 """
 
@@ -38,7 +38,7 @@ def _bool_env(name: str) -> bool:
 
 
 def resolve_paths(args: argparse.Namespace) -> tuple[Path, Path, Path]:
-    # Preserve main's interface: prefer --out-dir, then --out, else ./out
+    # Prefer --out-dir, then --out, else ./out
     if getattr(args, "out_dir", None):
         out_dir = Path(args.out_dir)
         _ensure_dir(out_dir)
