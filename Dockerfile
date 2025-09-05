@@ -6,7 +6,7 @@ WORKDIR /aura_ws
 
 # Base deps for build & Python tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 python3.11-venv python3-pip git curl \
+    python3 python3-venv python3-pip git curl jq \
  && rm -rf /var/lib/apt/lists/*
 
 # Copy repo

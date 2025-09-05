@@ -31,3 +31,19 @@ tools/*.bak
 
 # local PDFs
 *.pdf
+
+# Local build outputs
+build/
+install/
+log/
+out/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local scripts/backups
+definitive_fix_and_reset.sh
+Dockerfile.bak
+Dockerfile.broken.*
+Makefile.bak.*

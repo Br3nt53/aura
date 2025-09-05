@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<policy version="0.2.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="ros_security_policy.xsd">
+    <enclaves>
+        <enclave path="/">
+            <profiles>
+                <profile ns="/" node="fusion_tracker_node">
+                    <topics>
+                        <topic name="/aura/tracks">
+                            <publish/>
+                        </topic>
+                        <topic name="/aura/rf_presence_hint">
+                            <subscribe/>
+                        </topic>
+                    </topics>
+                </profile>
+                <profile ns="/" node="scenario_player_node">
+                    <topics>
+                        <topic name="/mock_target/pose">
+                            <publish/>
+                        </topic>
+                        <topic name="/aura/frame">
+                            <publish/>
+                        </topic>
+                    </topics>
+                </profile>
+                <profile ns="/" node="mock_rf_node">
+                     </profile>
+                 </profiles>
+        </enclave>
+    </enclaves>
+</policy>

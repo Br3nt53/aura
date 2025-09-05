@@ -200,3 +200,21 @@ before submitting a PR. Consider adding or updating:
 A new scenario under scenarios/,
 Unit tests in tests/,
 Documentation examples and expected results.
+
+### 🔒 Running with Security (SROS)
+
+The "aura" repository supports ROS 2 security features. To run the system in a secure configuration:
+
+1.  **Generate the Keystore:**
+    Before launching, you must generate the necessary cryptographic keys and certificates from the repository root.
+    ```bash
+    ./security/generate_keystore.sh
+    ```
+    This will create a `security/keystore` directory containing the security artifacts.
+
+2.  **Launch with the `secure` Flag:**
+    Use the `secure:=true` launch argument to enable SROS. The launch file will automatically find the keystore.
+    ```bash
+    # From the repository root
+    ros2 launch aura_examples bringup.launch.py secure:=true
+    ```
