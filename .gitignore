@@ -28,3 +28,6 @@ smoke_latest.log
 output/
 .github/workflows/*.bak.*
 tools/*.bak
+
+# local PDFs
+*.pdf
