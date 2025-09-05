@@ -33,9 +33,11 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Create venv
+        run: uv venv
+
       - name: Install deps and pip-licenses
-        run: |
-          uv pip install -r requirements.txt -r requirements-dev.txt pip-licenses
+        run: uv pip install -r requirements.txt -r requirements-dev.txt pip-licenses
 
       - name: Generate THIRD_PARTY_NOTICES.md
         run: |

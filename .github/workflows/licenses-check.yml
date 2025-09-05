@@ -26,10 +26,19 @@ jobs:
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          
+          - name: Cache uv
+  uses: actions/cache@v4
+  with:
+    path: ~/.cache/uv
+    key: uv-${{ runner.os }}-${{ hashFiles('requirements.txt','requirements-dev.txt','uv.lock') }}
+
+
+      - name: Create venv
+        run: uv venv
 
       - name: Install deps and pip-licenses
-        run: |
-          uv pip install -r requirements.txt -r requirements-dev.txt pip-licenses
+        run: uv pip install -r requirements.txt -r requirements-dev.txt pip-licenses
 
       - name: Regenerate notices
         run: |
