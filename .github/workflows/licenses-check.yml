@@ -26,6 +26,7 @@ jobs:
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+<<<<<<< HEAD
           
           - name: Cache uv
   uses: actions/cache@v4
@@ -39,6 +40,12 @@ jobs:
 
       - name: Install deps and pip-licenses
         run: uv pip install -r requirements.txt -r requirements-dev.txt pip-licenses
+=======
+
+      - name: Install deps and pip-licenses
+        run: |
+          uv pip install -r requirements.txt -r requirements-dev.txt pip-licenses
+>>>>>>> f034b75 (ci(licenses): auto-refresh and PR check for THIRD_PARTY_NOTICES.md)
 
       - name: Regenerate notices
         run: |
